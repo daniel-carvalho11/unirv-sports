@@ -1,0 +1,330 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ========================================================
+// 1. ENUMS
+// ========================================================
+
+enum UserRole {
+  ADMIN          // Administrador Geral (Liga/Comissão)
+  REPRESENTATIVE // Representante de Atlética
+  TABLE_OFFICIAL // Mesário
+  ATHLETE        // Atleta
+  VISITOR        // Público Geral / Visitante
+}
+
+enum SportGender {
+  MALE
+  FEMALE
+  MIXED
+}
+
+enum SportType {
+  DIRECT_SCORE      // Futsal, Basquete, Handebol
+  SETS_PARTIALS     // Vôlei, Tênis de Mesa, Beach Tennis
+  TIME_STOPWATCH    // Natação, Atletismo
+  JUDGES_SCORE      // Skate, Ginástica
+}
+
+enum TournamentStatus {
+  REGISTRATION_OPEN
+  IN_PROGRESS
+  FINISHED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  FINISHED
+  CANCELED
+}
+
+enum MatchEventType {
+  GOAL_POINT
+  FOUL
+  YELLOW_CARD
+  RED_CARD
+  SET_PARTIAL
+  TIME_NOTE_RECORD
+}
+
+// ========================================================
+// 2. MODELS
+// ========================================================
+
+model Athletics {
+  id             Int            @id @default(autoincrement())
+  name           String         @db.VarChar(100)
+  acronym        String         @unique @db.VarChar(20)
+  degreeProgram  String         @db.VarChar(100)
+  logoUrl        String?        @db.VarChar(255)
+  foundationYear Int?
+  city           String         @default("Rio Verde") @db.VarChar(100)
+  state          String         @default("GO") @db.Char(2)
+  historyMission String?        @db.Text
+
+  // Audit & Soft Delete
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  // Relations
+  users          User[]
+  presidents     BoardPresident[]
+  trophies       TrophyConquest[]
+  teams          Team[]
+  rankings       OlympicRanking[]
+
+  @@map("athletics")
+}
+
+model BoardPresident {
+  id          Int       @id @default(autoincrement())
+  athleticsId Int
+  name        String    @db.VarChar(100)
+  tenureYear  Int
+  photoUrl    String?   @db.VarChar(255)
+  role        String    @default("President") @db.VarChar(50)
+  isCurrent   Boolean   @default(false)
+
+  // Audit & Soft Delete
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  athletics   Athletics @relation(fields: [athleticsId], references: [id], onDelete: Cascade)
+
+  @@map("board_presidents")
+}
+
+model TrophyConquest {
+  id          Int       @id @default(autoincrement())
+  athleticsId Int
+  title       String    @db.VarChar(150)
+  year        Int
+  description String?   @db.Text
+  iconType    String    @default("trophy") @db.VarChar(50)
+
+  // Audit & Soft Delete
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  athletics   Athletics @relation(fields: [athleticsId], references: [id], onDelete: Cascade)
+
+  @@map("trophy_conquests")
+}
+
+model User {
+  id             Int          @id @default(autoincrement())
+  athleticsId    Int?
+  name           String       @db.VarChar(100)
+  email          String       @unique @db.VarChar(100)
+  passwordHash   String       @db.VarChar(255)
+  cpf            String?      @unique @db.VarChar(14)
+  academicId     String?      @unique @db.VarChar(20) // RA UniRV
+  role           UserRole     @default(ATHLETE)
+  photoUrl       String?      @db.VarChar(255)
+  isHomeFeatured Boolean      @default(false)
+
+  // Audit & Soft Delete
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  athletics      Athletics?   @relation(fields: [athleticsId], references: [id], onDelete: SetNull)
+  teams          TeamAthlete[]
+  eventsRecorded MatchEvent[]
+
+  @@map("users")
+}
+
+model Sport {
+  id          Int               @id @default(autoincrement())
+  name        String            @db.VarChar(50)
+  gender      SportGender
+  type        SportType
+  iconUrl     String?           @db.VarChar(255)
+  shortDesc   String?           @db.VarChar(255)
+
+  // Audit & Soft Delete
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+
+  tournaments TournamentSport[]
+
+  @@map("sports")
+}
+
+model Tournament {
+  id        Int              @id @default(autoincrement())
+  name      String           @db.VarChar(100)
+  year      Int
+  startDate DateTime?        @db.Date
+  endDate   DateTime?        @db.Date
+  status    TournamentStatus @default(REGISTRATION_OPEN)
+
+  // Audit & Soft Delete
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+
+  sports    TournamentSport[]
+  rankings  OlympicRanking[]
+
+  @@map("tournaments")
+}
+
+model TournamentSport {
+  id                  Int        @id @default(autoincrement())
+  tournamentId        Int
+  sportId             Int
+  olympicWeightPoints Int        @default(13)
+
+  // Audit & Soft Delete
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  deletedAt           DateTime?
+
+  tournament          Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  sport               Sport      @relation(fields: [sportId], references: [id], onDelete: Cascade)
+  teams               Team[]
+  matches             Match[]
+
+  @@map("tournament_sports")
+}
+
+model Team {
+  id                Int             @id @default(autoincrement())
+  athleticsId       Int
+  tournamentSportId Int
+  finalPosition     Int?
+  isJubsQualified   Boolean         @default(false)
+
+  // Audit & Soft Delete
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  athletics         Athletics       @relation(fields: [athleticsId], references: [id], onDelete: Cascade)
+  tournamentSport   TournamentSport @relation(fields: [tournamentSportId], references: [id], onDelete: Cascade)
+
+  athletes          TeamAthlete[]
+  homeMatches       Match[]         @relation("HomeTeamMatches")
+  awayMatches       Match[]         @relation("AwayTeamMatches")
+  wonMatches        Match[]         @relation("WinnerTeamMatches")
+  matchEvents       MatchEvent[]
+
+  @@map("teams")
+}
+
+model TeamAthlete {
+  teamId       Int
+  userId       Int
+  jerseyNumber Int?
+
+  // Audit & Soft Delete
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  team         Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@map("team_athletes")
+}
+
+model Match {
+  id                Int             @id @default(autoincrement())
+  tournamentSportId Int
+  homeTeamId        Int?
+  awayTeamId        Int?
+  stage             String          @default("Group Stage") @db.VarChar(50)
+  scheduledAt       DateTime
+  locationCourt     String?         @db.VarChar(100)
+  status            MatchStatus     @default(SCHEDULED)
+  homeScore         Int             @default(0)
+  awayScore         Int             @default(0)
+  stopwatchSeconds  Int             @default(0)
+  winnerTeamId      Int?
+
+  // Audit & Soft Delete
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  tournamentSport   TournamentSport @relation(fields: [tournamentSportId], references: [id])
+  homeTeam          Team?           @relation("HomeTeamMatches", fields: [homeTeamId], references: [id])
+  awayTeam          Team?           @relation("AwayTeamMatches", fields: [awayTeamId], references: [id])
+  winnerTeam        Team?           @relation("WinnerTeamMatches", fields: [winnerTeamId], references: [id])
+
+  events            MatchEvent[]
+
+  @@map("matches")
+}
+
+model MatchEvent {
+  id            Int            @id @default(autoincrement())
+  matchId       Int
+  teamId        Int?
+  userId        Int?
+  type          MatchEventType
+  recordedValue String?        @db.VarChar(50)
+  matchTimeSec  Int?
+
+  // Audit & Soft Delete
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  match         Match          @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team          Team?          @relation(fields: [teamId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id])
+
+  @@map("match_events")
+}
+
+model OlympicRanking {
+  id           Int        @id @default(autoincrement())
+  tournamentId Int
+  athleticsId  Int
+  totalPoints  Int        @default(0)
+  goldCount    Int        @default(0)
+  silverCount  Int        @default(0)
+  bronzeCount  Int        @default(0)
+
+  // Audit & Soft Delete
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  athletics    Athletics  @relation(fields: [athleticsId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, athleticsId])
+  @@map("olympic_rankings")
+}
+
+model SystemSetting {
+  id         Int       @id @default(autoincrement())
+  key        String    @unique @db.VarChar(50)
+  targetDate DateTime?
+  eventTitle String?   @db.VarChar(100)
+  message    String?   @db.VarChar(255)
+  isActive   Boolean   @default(true)
+
+  // Audit & Soft Delete
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@map("system_settings")
+}
