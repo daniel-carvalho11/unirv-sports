@@ -147,7 +147,7 @@ model User {
 
 model Sport {
   id          Int               @id @default(autoincrement())
-  name        String            @db.VarChar(50)
+  name        String            @unique @db.VarChar(50)
   gender      SportGender
   type        SportType
   iconUrl     String?           @db.VarChar(255)
