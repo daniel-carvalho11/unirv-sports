@@ -1,11 +1,11 @@
 import { Prisma } from '@prisma/client';
 
-export class CreateUserDto implements Prisma.UserCreateInput {
+export class CreateUserDto implements Omit<Prisma.UserCreateInput, 'passwordHash'> {
   name: string;
   email: string;
-  passwordHash: string; // Adicionado para satisfazer a exigência do Prisma
+  password: string; 
   cpf?: string;
   phone?: string;
   academicCode?: string;
-  athleticId?: number;  // ID para conectar com a relação da Atlética
+  athleticId?: number;
 }

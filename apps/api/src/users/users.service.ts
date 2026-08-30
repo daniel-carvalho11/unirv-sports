@@ -1,21 +1,37 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly SALT_ROUNDS = 10;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    const { athleticId, ...userData } = createUserDto;
+    const { athleticId, password, ...userData } = createUserDto;
+
+    const passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
 
     return this.prisma.user.create({
       data: {
         ...userData,
+        passwordHash,
         ...(athleticId && {
-          athletic: { connect: { id: athleticId } },
+          athletics: { connect: { id: athleticId } },
         }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        cpf: true,
+        phone: true,
+        academicCode: true,
+        createdAt: true,
+        athletics: true,
       },
     });
   }
@@ -24,7 +40,7 @@ export class UsersService {
     return this.prisma.user.findMany({
       where: { deletedAt: null },
       include: {
-        athletics: true, // Traz os dados da Atléticas do usuário
+        athletics: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -47,14 +63,20 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
-    const { athleticId, ...userData } = updateUserDto;
+    const { athleticId, password, ...userData } = updateUserDto;
+
+    let passwordHash: string | undefined;
+    if (password) {
+      passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
+    }
 
     return this.prisma.user.update({
       where: { id },
       data: {
         ...userData,
+        ...(passwordHash && { passwordHash }),
         ...(athleticId && {
-          athletic: { connect: { id: athleticId } },
+          athletics: { connect: { id: athleticId } },
         }),
       },
     });
