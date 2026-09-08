@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AthleticsModule } from './athletics/athletics.module';
 import { SportsModule } from './sports/sports.module';
@@ -12,10 +11,34 @@ import { OlympicRankingModule } from './olympic-ranking/olympic-ranking.module';
 import { BoardPresidentsModule } from './board-presidents/board-presidents.module';
 import { TrophyConquestsModule } from './trophy-conquests/trophy-conquests.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
+import { AuthModule } from './auth/auth.module';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
-  imports: [PrismaModule, AthleticsModule, SportsModule, UsersModule, TournamentsModule, MatchesModule, MatchEventsModule, OlympicRankingModule, BoardPresidentsModule, TrophyConquestsModule, SystemSettingsModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    AthleticsModule,
+    SportsModule,
+    UsersModule,
+    TournamentsModule,
+    MatchesModule,
+    MatchEventsModule,
+    OlympicRankingModule,
+    BoardPresidentsModule,
+    TrophyConquestsModule,
+    SystemSettingsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}
