@@ -8,6 +8,7 @@ import { NextMatchesSection } from '@/components/NextMatchesSection';
 import { LeaderboardSection } from '@/components/LeaderboardSection';
 import { AthleticsGridSection } from '@/components/AthleticsGridSection';
 import { Footer } from '@/components/Footer';
+import { AuthModal } from '@/components/AuthModal';
 
 export default function Home() {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; type: 'login' | 'register' }>({
@@ -16,7 +17,11 @@ export default function Home() {
   });
 
   const handleOpenAuth = (type: 'login' | 'register') => {
-    setAuthModal({ isOpen: type === 'register' ? true : true, type });
+    setAuthModal({ isOpen: true, type });
+  };
+
+  const handleCloseAuth = () => {
+    setAuthModal((prev) => ({ ...prev, isOpen: false }));
   };
 
   return (
@@ -28,6 +33,13 @@ export default function Home() {
       <LeaderboardSection />
       <AthleticsGridSection />
       <Footer />
+
+      <AuthModal
+        isOpen={authModal.isOpen}
+        type={authModal.type}
+        onClose={handleCloseAuth}
+        onSwitchType={(type) => setAuthModal({ isOpen: true, type })}
+      />
     </main>
   );
 }
