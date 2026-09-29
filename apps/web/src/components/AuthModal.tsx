@@ -15,7 +15,6 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // Valor padrão alinhado com o Enum do Prisma
   const [role, setRole] = useState<UserRoleType>('VISITOR'); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
