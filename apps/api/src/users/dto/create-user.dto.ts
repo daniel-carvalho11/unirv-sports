@@ -1,11 +1,24 @@
-import { Prisma } from '@prisma/client';
+import { IsEmail, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { UserRole } from '@prisma/client';
 
-export class CreateUserDto implements Omit<Prisma.UserCreateInput, 'passwordHash'> {
+export class CreateUserDto {
+  @IsString()
+  @IsNotEmpty()
   name: string;
+
+  @IsEmail()
+  @IsNotEmpty()
   email: string;
-  password: string; 
-  cpf?: string;
-  phone?: string;
-  academicCode?: string;
-  athleticId?: number;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+
+  @IsEnum(UserRole)
+  @IsNotEmpty()
+  role: UserRole;
+
+  @IsOptional()
+  @IsNumber()
+  athleticsId?: number; 
 }

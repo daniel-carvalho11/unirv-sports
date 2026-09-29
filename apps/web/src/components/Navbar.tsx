@@ -18,7 +18,10 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
           <a href="#modalidades" className="hover:text-white transition-colors">Modalidades</a>
           <a href="#jogos" className="hover:text-white transition-colors">Próximos Jogos</a>
-          <a href="#classificacao" className="hover:text-white transition-colors">Classificação</a>
+          <a href="#ao-vivo" className="hover:text-white transition-colors flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            Ao Vivo
+          </a>
           <a href="#atleticas" className="hover:text-white transition-colors">Atléticas</a>
         </nav>
         <div className="flex items-center gap-3">

@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
 import { ModalitiesSection } from '@/components/ModalitiesSection';
 import { NextMatchesSection } from '@/components/NextMatchesSection';
-import { LeaderboardSection } from '@/components/LeaderboardSection';
+import { LiveFeedSection } from '@/components/LiveFeedSection';
 import { AthleticsGridSection } from '@/components/AthleticsGridSection';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
@@ -30,7 +30,7 @@ export default function Home() {
       <HeroSection onOpenAuth={handleOpenAuth} />
       <ModalitiesSection />
       <NextMatchesSection />
-      <LeaderboardSection />
+      <LiveFeedSection />
       <AthleticsGridSection />
       <Footer />
 

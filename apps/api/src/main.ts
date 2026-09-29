@@ -16,6 +16,8 @@ async function bootstrap() {
 
   app.enableCors(); // Permite requisições do Front-end React/Next.js
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 3001;
+  await app.listen(port);
+  console.log(`Backend NestJS rodando na porta ${port}`);
 }
 bootstrap();

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -11,7 +11,15 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    const { athleticId, password, ...userData } = createUserDto;
+    const { athleticsId, password, ...userData } = createUserDto;
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: userData.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Este e-mail já está cadastrado na plataforma.');
+    }
 
     const passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
 
@@ -19,16 +27,15 @@ export class UsersService {
       data: {
         ...userData,
         passwordHash,
-        ...(athleticId && {
-          athletics: { connect: { id: athleticId } },
+        ...(athleticsId && {
+          athletics: { connect: { id: Number(athleticsId) } },
         }),
       },
       select: {
         id: true,
         name: true,
         email: true,
-        cpf: true,
-        academicId: true,
+        role: true,
         createdAt: true,
         athletics: true,
       },
@@ -62,7 +69,7 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
-    const { athleticId, password, ...userData } = updateUserDto;
+    const { athleticsId, password, ...userData } = updateUserDto;
 
     let passwordHash: string | undefined;
     if (password) {
@@ -74,8 +81,8 @@ export class UsersService {
       data: {
         ...userData,
         ...(passwordHash && { passwordHash }),
-        ...(athleticId && {
-          athletics: { connect: { id: athleticId } },
+        ...(athleticsId && {
+          athletics: { connect: { id: Number(athleticsId) } },
         }),
       },
     });
