@@ -9,6 +9,7 @@ import { LiveFeedSection } from '@/components/LiveFeedSection';
 import { AthleticsGridSection } from '@/components/AthleticsGridSection';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
+import { CountdownTimer } from '@/components/CountDownTimer';
 
 export default function Home() {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; type: 'login' | 'register' }>({
@@ -28,6 +29,14 @@ export default function Home() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <Navbar onOpenAuth={handleOpenAuth} />
       <HeroSection onOpenAuth={handleOpenAuth} />
+      
+      <section className="max-w-7xl mx-auto px-6 py-6">
+        <CountdownTimer
+          targetDate="2026-10-15T09:00:00"
+          title="Abertura Oficial dos Jogos Universitários UniRV"
+        />
+      </section>
+
       <ModalitiesSection />
       <NextMatchesSection />
       <LiveFeedSection />

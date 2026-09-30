@@ -1,5 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Exportando o tipo de Role alinhado ao Prisma
 export type UserRoleType = 'ADMIN' | 'REPRESENTATIVE' | 'TABLE_OFFICIAL' | 'ATHLETE' | 'VISITOR';
 
 export async function loginRequest(email: string, password: string) {
@@ -22,6 +23,7 @@ export async function registerRequest(payload: {
   email: string;
   password: string;
   role: UserRoleType;
+  athleticsId?: number;
 }) {
   const response = await fetch(`${API_URL}/users`, {
     method: 'POST',

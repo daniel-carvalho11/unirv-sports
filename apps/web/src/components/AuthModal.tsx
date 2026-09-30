@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginRequest, registerRequest, UserRoleType } from '@/lib/api';
+import { UNIRV_ATHLETICS } from '@/lib/athletics';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -15,13 +16,16 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRoleType>('VISITOR'); 
+  const [role, setRole] = useState<UserRoleType>('VISITOR');
+  const [athleticsId, setAthleticsId] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
 
   if (!isOpen) return null;
+
+  const showAthleticSelect = role === 'ATHLETE' || role === 'REPRESENTATIVE';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +41,13 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
         onClose();
         router.push('/dashboard');
       } else {
-        await registerRequest({ name, email, password, role });
+        await registerRequest({
+          name,
+          email,
+          password,
+          role,
+          ...(showAthleticSelect && { athleticsId }),
+        });
         alert('Conta criada com sucesso! Agora efetue o login.');
         onSwitchType('login');
       }
@@ -110,6 +120,26 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
                   <option value="TABLE_OFFICIAL">Oficial de Mesa</option>
                 </select>
               </div>
+
+              {/* Campo Dinâmico: Aparece apenas para Atletas e Diretores de Atlética */}
+              {showAthleticSelect && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
+                    Sua Atlética
+                  </label>
+                  <select
+                    value={athleticsId}
+                    onChange={(e) => setAthleticsId(Number(e.target.value))}
+                    className="w-full text-xs rounded-xl border border-slate-700 bg-slate-800 text-white focus:border-unirv-green py-3 px-4 outline-none"
+                  >
+                    {UNIRV_ATHLETICS.map((ath) => (
+                      <option key={ath.id} value={ath.id}>
+                        {ath.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </>
           )}
 
