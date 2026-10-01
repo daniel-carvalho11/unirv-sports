@@ -2,12 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { UNIRV_ATHLETICS } from '@/lib/athletics';
+
+interface AthleticInfo {
+  id: number;
+  name: string;
+  acronym: string;
+  degreeProgram?: string;
+}
 
 interface UserData {
   id: number | string;
   name?: string;
   email: string;
   role: 'ADMIN' | 'REPRESENTATIVE' | 'TABLE_OFFICIAL' | 'ATHLETE' | 'VISITOR';
+  athletics?: AthleticInfo | null;
 }
 
 interface Match {
@@ -21,13 +30,13 @@ interface Match {
   category: string;
 }
 
-interface SportOption {
-  id: string;
+interface SportFromApi {
+  id: number;
   name: string;
-  category: string;
-  icon: string;
-  description: string;
-  isRegistered?: boolean;
+  gender: string;
+  type: string;
+  shortDesc: string | null;
+  iconUrl: string | null;
 }
 
 export default function DashboardPage() {
@@ -35,20 +44,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'sports'>('overview');
   
-  // Lista Mock de Modalidades para Inscrição (Pronta para integração com Endpoint da API)
-  const [sports, setSports] = useState<SportOption[]>([
-    { id: 'futsal-masc', name: 'Futsal Masculino', category: 'Quadra', icon: '⚽', description: 'Treinos terças e quintas às 19h no Ginásio do Campus.' },
-    { id: 'beach-tennis', name: 'Beach Tennis Misto', category: 'Areia', icon: '🎾', description: 'Jogos e treinos funcionais às sextas-feiras.', isRegistered: true },
-    { id: 'volei-fem', name: 'Vôlei Feminino', category: 'Quadra', icon: '🏐', description: 'Treinos segundas e quartas às 18h.' },
-    { id: 'handebol-masc', name: 'Handebol Masculino', category: 'Quadra', icon: '🤾', description: 'Preparatório para os Jogos Universitários.' },
-    { id: 'basquete', name: 'Basquete 3x3', category: 'Quadra', icon: '🏀', description: 'Treinos ao ar livre e torneios relâmpago.' },
-  ]);
+  // Estado para armazenar esportes vindos da API e lista de IDs inscritos
+  const [sports, setSports] = useState<SportFromApi[]>([]);
+  const [registeredSportIds, setRegisteredSportIds] = useState<number[]>([]);
 
   // Lista Mock de Próximos Jogos
   const matches: Match[] = [
-    { id: 1, sport: 'Futsal Masculino', teamA: 'Engenharia', teamB: 'Medicina', date: '30/09/2026', time: '19:30', location: 'Ginásio Campus Rio Verde', category: 'Fase de Grupos' },
-    { id: 2, sport: 'Beach Tennis', teamA: 'Direito', teamB: 'Agronomia', date: '02/10/2026', time: '16:00', location: 'Arena Areia UniRV', category: 'Semifinal' },
-    { id: 3, sport: 'Vôlei Feminino', teamA: 'Medicina', teamB: 'Odontologia', date: '04/10/2026', time: '10:00', location: 'Ginásio Campus Rio Verde', category: 'Final' },
+    { id: 1, sport: 'Futsal Masculino', teamA: 'FAMERV', teamB: 'Grifo', date: '30/09/2026', time: '19:30', location: 'Ginásio Campus Rio Verde', category: 'Fase de Grupos' },
+    { id: 2, sport: 'Beach Tennis', teamA: 'Alcateia', teamB: 'AAAFORV', date: '02/10/2026', time: '16:00', location: 'Arena Areia UniRV', category: 'Semifinal' },
+    { id: 3, sport: 'Vôlei Feminino', teamA: 'FAMERV', teamB: 'Neurótica', date: '04/10/2026', time: '10:00', location: 'Ginásio Campus Rio Verde', category: 'Final' },
   ];
 
   const router = useRouter();
@@ -71,22 +75,40 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  // Carrega as modalidades reais cadastradas no banco de dados da API
+  useEffect(() => {
+    async function fetchSports() {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/sports`);
+        if (res.ok) {
+          const data = await res.json();
+          setSports(data);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar modalidades do banco:', err);
+      }
+    }
+
+    fetchSports();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
     router.push('/');
   };
 
-  const handleToggleSportRegistration = (sportId: string) => {
-    setSports((prev) =>
-      prev.map((s) => (s.id === sportId ? { ...s, isRegistered: !s.isRegistered } : s))
+  const handleToggleSportRegistration = (sportId: number) => {
+    setRegisteredSportIds((prev) =>
+      prev.includes(sportId) ? prev.filter((id) => id !== sportId) : [...prev, sportId]
     );
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400 font-medium animate-pulse">A carregar o painel...</p>
+        <p className="text-slate-400 font-medium animate-pulse">Carregando painel...</p>
       </div>
     );
   }
@@ -107,7 +129,12 @@ export default function DashboardPage() {
   };
 
   const badge = getRoleBadge(user?.role);
-  const registeredSports = sports.filter((s) => s.isRegistered);
+  const mySports = sports.filter((s) => registeredSportIds.includes(s.id));
+
+  // Busca dados estáticos adicionais da atlética (como instagram/curso) caso necessário
+  const userAthleticData = UNIRV_ATHLETICS.find(
+    (a) => a.acronym.toLowerCase() === user?.athletics?.acronym?.toLowerCase()
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -145,7 +172,7 @@ export default function DashboardPage() {
               Olá, {user?.name || 'Atleta UniRV'}!
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-lg leading-relaxed">
-              Gerencie as tuas modalidades desportivas, acompanha o calendário oficial de partidas e solicita inscrição em novas equipas.
+              Gerencie suas modalidades esportivas, acompanhe o calendário oficial de partidas e solicite inscrição em novas equipes.
             </p>
           </div>
 
@@ -207,11 +234,11 @@ export default function DashboardPage() {
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
                 <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Minhas Inscrições</span>
                 <p className="text-2xl font-black text-unirv-green mt-2">
-                  {registeredSports.length} {registeredSports.length === 1 ? 'Modalidade' : 'Modalidades'}
+                  {mySports.length} {mySports.length === 1 ? 'Modalidade' : 'Modalidades'}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  {registeredSports.length > 0
-                    ? registeredSports.map((s) => s.name).join(', ')
+                  {mySports.length > 0
+                    ? mySports.map((s) => s.name).join(', ')
                     : 'Nenhuma modalidade inscrita ainda'}
                 </p>
               </div>
@@ -224,10 +251,36 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Atlética Vinculada</span>
-                <p className="text-xl font-black text-emerald-400 mt-2">Engenharia UniRV</p>
-                <p className="text-xs text-slate-400 mt-1">Perfil ativo para inscrições em torneios</p>
+              {/* Card de Atlética Vinculada com Escudo / Logo */}
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between hover:border-unirv-green/40 transition-all group">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                    Atlética Vinculada
+                  </span>
+                  <p className="text-xl font-black text-unirv-green">
+                    {user?.athletics?.name || 'Sem Atlética Vinculada'}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {userAthleticData?.course || user?.athletics?.degreeProgram || 'Perfil ativo no sistema'}
+                  </p>
+                </div>
+
+                {/* Badge / Escudo da Atlética */}
+                <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-2 shadow-inner group-hover:scale-105 transition-transform">
+                  {user?.athletics?.acronym ? (
+                    <img
+                      src={`/athletics/${user.athletics.acronym.toLowerCase()}.png`}
+                      alt={user.athletics.name}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span className="text-xs font-black text-slate-400 uppercase">
+                    {user?.athletics?.acronym || 'UNIRV'}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -274,7 +327,7 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-xl font-black text-white">Calendário de Partidas</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Acompanha as datas, horários e locais dos jogos das atléticas da UniRV.
+                Acompanhe as datas, horários e locais dos jogos das atléticas da UniRV.
               </p>
             </div>
 
@@ -314,36 +367,41 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-xl font-black text-white">Modalidades Disponíveis</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Solicita a tua inscrição nas modalidades para participar nos treinos e representar a tua atlética nos torneios.
+                Solicite sua inscrição nas modalidades para participar dos treinos e representar sua atlética nos torneios.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sports.map((sport) => (
-                <div key={sport.id} className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-3xl">{sport.icon}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-full text-slate-400">
-                        {sport.category}
-                      </span>
+              {sports.map((sport) => {
+                const isRegistered = registeredSportIds.includes(sport.id);
+                return (
+                  <div key={sport.id} className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-3xl">{sport.iconUrl || '🏆'}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-full text-slate-400">
+                          {sport.gender}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-black text-white">{sport.name}</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        {sport.shortDesc || 'Modalidade oficial dos jogos universitários.'}
+                      </p>
                     </div>
-                    <h3 className="text-base font-black text-white">{sport.name}</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">{sport.description}</p>
-                  </div>
 
-                  <button
-                    onClick={() => handleToggleSportRegistration(sport.id)}
-                    className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                      sport.isRegistered
-                        ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20'
-                        : 'bg-unirv-green hover:bg-unirv-mid-green text-slate-950 shadow-lg shadow-unirv-green/10'
-                    }`}
-                  >
-                    {sport.isRegistered ? 'Cancelar Inscrição' : 'Solicitar Inscrição'}
-                  </button>
-                </div>
-              ))}
+                    <button
+                      onClick={() => handleToggleSportRegistration(sport.id)}
+                      className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        isRegistered
+                          ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20'
+                          : 'bg-unirv-green hover:bg-unirv-mid-green text-slate-950 shadow-lg shadow-unirv-green/10'
+                      }`}
+                    >
+                      {isRegistered ? 'Cancelar Inscrição' : 'Solicitar Inscrição'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

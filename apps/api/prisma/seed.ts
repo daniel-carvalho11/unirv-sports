@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SportGender, SportType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -15,8 +15,53 @@ const athleticsData = [
   { name: 'A.A.A. Cerberus', acronym: 'CERBERUS', degreeProgram: 'Engenharias' },
 ];
 
+const sportsData = [
+  {
+    name: 'Futsal Masculino',
+    gender: SportGender.MALE,
+    type: SportType.DIRECT_SCORE,
+    shortDesc: 'Treinos terças e quintas no Ginásio do Campus.',
+    iconUrl: '⚽',
+  },
+  {
+    name: 'Futsal Feminino',
+    gender: SportGender.FEMALE,
+    type: SportType.DIRECT_SCORE,
+    shortDesc: 'Treinos segundas e quartas no Ginásio do Campus.',
+    iconUrl: '⚽',
+  },
+  {
+    name: 'Beach Tennis Misto',
+    gender: SportGender.MIXED,
+    type: SportType.SETS_PARTIALS,
+    shortDesc: 'Jogos e treinos funcionais na Arena de Areia.',
+    iconUrl: '🎾',
+  },
+  {
+    name: 'Vôlei Feminino',
+    gender: SportGender.FEMALE,
+    type: SportType.SETS_PARTIALS,
+    shortDesc: 'Treinos segundas e quartas no Ginásio do Campus.',
+    iconUrl: '🏐',
+  },
+  {
+    name: 'Handebol Masculino',
+    gender: SportGender.MALE,
+    type: SportType.DIRECT_SCORE,
+    shortDesc: 'Preparatório para os Jogos Universitários.',
+    iconUrl: '🤾',
+  },
+  {
+    name: 'Basquete 3x3',
+    gender: SportGender.MIXED,
+    type: SportType.DIRECT_SCORE,
+    shortDesc: 'Treinos ao ar livre e torneios relâmpago.',
+    iconUrl: '🏀',
+  },
+];
+
 async function main() {
-  console.log('Populando banco de dados com as atléticas da UniRV...');
+  console.log('Populando banco com Atléticas e Modalidades...');
 
   for (const ath of athleticsData) {
     await prisma.athletics.upsert({
@@ -26,7 +71,26 @@ async function main() {
     });
   }
 
-  console.log('Seed concluído com sucesso!');
+  for (const sport of sportsData) {
+    await prisma.sport.upsert({
+      where: { name: sport.name },
+      update: {
+        gender: sport.gender,
+        type: sport.type,
+        shortDesc: sport.shortDesc,
+        iconUrl: sport.iconUrl,
+      },
+      create: {
+        name: sport.name,
+        gender: sport.gender,
+        type: sport.type,
+        shortDesc: sport.shortDesc,
+        iconUrl: sport.iconUrl,
+      },
+    });
+  }
+
+  console.log('Seed de Atléticas e Esportes concluído com sucesso!');
 }
 
 main()

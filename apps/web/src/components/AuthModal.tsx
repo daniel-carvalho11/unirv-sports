@@ -34,10 +34,8 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
 
     try {
       if (type === 'login') {
-        const data = await loginRequest(email, password);
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('user', JSON.stringify(data.user || { email }));
-        alert('Login efetuado com sucesso!');
+        // A função loginRequest já trata o armazenamento seguro do token e do usuário completo (com a atlética) no localStorage
+        await loginRequest(email, password);
         onClose();
         router.push('/dashboard');
       } else {
