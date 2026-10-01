@@ -12,6 +12,7 @@ const athleticsData = [
   { name: 'A.A.A. Kromus', acronym: 'KROMUS', degreeProgram: 'Educação Física / FADES' },
   { name: 'A.A.A. Neurótica', acronym: 'NEUROTICA', degreeProgram: 'Saúde / Geral' },
   { name: 'A.A.A. AAAFORV', acronym: 'AAAFORV', degreeProgram: 'Odontologia' },
+  { name: 'A.A.A. Cerberus', acronym: 'CERBERUS', degreeProgram: 'Engenharias' },
 ];
 
 async function main() {
