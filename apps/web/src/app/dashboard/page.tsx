@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UNIRV_ATHLETICS } from '@/lib/athletics';
+import { UNIRV_ATHLETICS, getAthleticLogo } from '@/lib/athletics';
 
 interface AthleticInfo {
   id: number;
@@ -66,13 +66,13 @@ export default function DashboardPage() {
       return;
     }
 
-    try {
-      setUser(JSON.parse(storedUser));
-    } catch {
-      router.push('/');
-    } finally {
-      setLoading(false);
-    }
+try {
+  setUser(JSON.parse(storedUser));
+} catch {
+  router.push('/');
+} finally {
+  setLoading(false);
+}
   }, [router]);
 
   // Carrega as modalidades reais cadastradas no banco de dados da API
@@ -266,25 +266,23 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Badge / Escudo da Atlética */}
-                <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-2 shadow-inner group-hover:scale-105 transition-transform">
+                <div className="w-16 h-16 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-2 shadow-inner group-hover:scale-105 transition-transform overflow-hidden relative">
                   {user?.athletics?.acronym ? (
                     <img
-                      src={`/athletics/${user.athletics.acronym.toLowerCase()}.png`}
+                      src={getAthleticLogo(user.athletics.acronym)}
                       alt={user.athletics.name}
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
                     />
-                  ) : null}
-                  <span className="text-xs font-black text-slate-400 uppercase">
-                    {user?.athletics?.acronym || 'UNIRV'}
-                  </span>
+                  ) : (
+                    <span className="text-xs font-black text-slate-400 uppercase">
+                      UNIRV
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Resumo dos Próximos Jogos */}
+            {/* Resumo dos Próximos Jogos com Logos das Atléticas nas Partidas */}
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-black text-white">Próximos Jogos da Semana</h2>
@@ -305,9 +303,25 @@ export default function DashboardPage() {
                         <span>{match.category}</span>
                       </div>
                       <div className="flex items-center justify-around py-4 my-2 border-y border-slate-900">
-                        <span className="font-black text-sm text-white">{match.teamA}</span>
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={getAthleticLogo(match.teamA)} 
+                            alt={match.teamA} 
+                            className="w-6 h-6 object-contain"
+                          />
+                          <span className="font-black text-sm text-white">{match.teamA}</span>
+                        </div>
+
                         <span className="text-xs font-extrabold text-slate-600 uppercase">VS</span>
-                        <span className="font-black text-sm text-white">{match.teamB}</span>
+
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-sm text-white">{match.teamB}</span>
+                          <img 
+                            src={getAthleticLogo(match.teamB)} 
+                            alt={match.teamB} 
+                            className="w-6 h-6 object-contain"
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2">
@@ -341,9 +355,25 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex items-center justify-between py-6 my-2 border-y border-slate-900">
-                      <span className="font-black text-base text-white">{match.teamA}</span>
+                      <div className="flex items-center gap-2">
+                        <img 
+                          src={getAthleticLogo(match.teamA)} 
+                          alt={match.teamA} 
+                          className="w-8 h-8 object-contain"
+                        />
+                        <span className="font-black text-base text-white">{match.teamA}</span>
+                      </div>
+
                       <span className="text-xs font-black text-slate-600">VS</span>
-                      <span className="font-black text-base text-white">{match.teamB}</span>
+
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-base text-white">{match.teamB}</span>
+                        <img 
+                          src={getAthleticLogo(match.teamB)} 
+                          alt={match.teamB} 
+                          className="w-8 h-8 object-contain"
+                        />
+                      </div>
                     </div>
                   </div>
 
