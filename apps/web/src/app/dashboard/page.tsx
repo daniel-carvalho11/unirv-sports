@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UNIRV_ATHLETICS, getAthleticLogo } from '@/lib/athletics';
+import {
+  getMyRegistrations,
+  requestSportRegistration,
+  getPendingRegistrations,
+  updateRegistrationStatus,
+  SportRegistration,
+} from '@/lib/registrations';
 
 interface AthleticInfo {
   id: number;
@@ -16,6 +23,7 @@ interface UserData {
   name?: string;
   email: string;
   role: 'ADMIN' | 'REPRESENTATIVE' | 'TABLE_OFFICIAL' | 'ATHLETE' | 'VISITOR';
+  athleticsId?: number;
   athletics?: AthleticInfo | null;
 }
 
@@ -42,11 +50,16 @@ interface SportFromApi {
 export default function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'sports'>('overview');
-  
-  // Estado para armazenar esportes vindos da API e lista de IDs inscritos
+  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'sports' | 'pending'>('overview');
+
+  // Estados de dados da API
   const [sports, setSports] = useState<SportFromApi[]>([]);
-  const [registeredSportIds, setRegisteredSportIds] = useState<number[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<SportRegistration[]>([]);
+  const [pendingRegistrations, setPendingRegistrations] = useState<SportRegistration[]>([]);
+  
+  // Estados de carregamento de ações
+  const [submittingSportId, setSubmittingSportId] = useState<number | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   // Lista Mock de Próximos Jogos
   const matches: Match[] = [
@@ -66,32 +79,51 @@ export default function DashboardPage() {
       return;
     }
 
-try {
-  setUser(JSON.parse(storedUser));
-} catch {
-  router.push('/');
-} finally {
-  setLoading(false);
-}
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+    } catch {
+      router.push('/');
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
 
-  // Carrega as modalidades reais cadastradas no banco de dados da API
+  // Carrega modalidades e dados de inscrição conforme o tipo de usuário
   useEffect(() => {
-    async function fetchSports() {
+    async function fetchData() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const res = await fetch(`${apiUrl}/sports`);
-        if (res.ok) {
-          const data = await res.json();
-          setSports(data);
+        
+        // 1. Buscar todas as modalidades disponíveis
+        const sportsRes = await fetch(`${apiUrl}/sports`);
+        if (sportsRes.ok) {
+          const sportsData = await sportsRes.json();
+          setSports(sportsData);
+        }
+
+        if (user) {
+          // 2. Se for Atleta, buscar as inscrições do atleta
+          if (user.role === 'ATHLETE') {
+            const regs = await getMyRegistrations();
+            setMyRegistrations(regs);
+          }
+
+          // 3. Se for Diretor de Atlética, buscar solicitações pendentes da atlética
+          if (user.role === 'REPRESENTATIVE') {
+            const pending = await getPendingRegistrations();
+            setPendingRegistrations(pending);
+          }
         }
       } catch (err) {
-        console.error('Erro ao buscar modalidades do banco:', err);
+        console.error('Erro ao carregar dados do Dashboard:', err);
       }
     }
 
-    fetchSports();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -99,10 +131,32 @@ try {
     router.push('/');
   };
 
-  const handleToggleSportRegistration = (sportId: number) => {
-    setRegisteredSportIds((prev) =>
-      prev.includes(sportId) ? prev.filter((id) => id !== sportId) : [...prev, sportId]
-    );
+  // Solicitar Inscrição na Modalidade (Atleta)
+  const handleRequestRegistration = async (sportId: number) => {
+    try {
+      setSubmittingSportId(sportId);
+      await requestSportRegistration(sportId);
+      // Recarrega as inscrições atualizadas
+      const updatedRegs = await getMyRegistrations();
+      setMyRegistrations(updatedRegs);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao solicitar inscrição.');
+    } finally {
+      setSubmittingSportId(null);
+    }
+  };
+
+  // Aprovar ou Rejeitar Inscrição (Diretor de Atlética)
+  const handleStatusUpdate = async (id: number, status: 'APPROVED' | 'REJECTED') => {
+    try {
+      setActionLoadingId(id);
+      await updateRegistrationStatus(id, status);
+      setPendingRegistrations((prev) => prev.filter((item) => item.id !== id));
+    } catch (err: any) {
+      alert(err.message || 'Falha ao atualizar status da solicitação.');
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   if (loading) {
@@ -129,9 +183,8 @@ try {
   };
 
   const badge = getRoleBadge(user?.role);
-  const mySports = sports.filter((s) => registeredSportIds.includes(s.id));
 
-  // Busca dados estáticos adicionais da atlética (como instagram/curso) caso necessário
+  // Busca dados estáticos adicionais da atlética
   const userAthleticData = UNIRV_ATHLETICS.find(
     (a) => a.acronym.toLowerCase() === user?.athletics?.acronym?.toLowerCase()
   );
@@ -177,12 +230,21 @@ try {
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={() => setActiveTab('sports')}
-              className="px-4 py-3 bg-unirv-green hover:bg-unirv-mid-green text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-unirv-green/10"
-            >
-              Inscrever em Modalidades
-            </button>
+            {user?.role === 'REPRESENTATIVE' ? (
+              <button
+                onClick={() => setActiveTab('pending')}
+                className="px-4 py-3 bg-unirv-green hover:bg-unirv-mid-green text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-unirv-green/10"
+              >
+                Gerenciar Inscrições ({pendingRegistrations.length})
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveTab('sports')}
+                className="px-4 py-3 bg-unirv-green hover:bg-unirv-mid-green text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-unirv-green/10"
+              >
+                Inscrever em Modalidades
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('matches')}
               className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-700 transition-all"
@@ -193,7 +255,7 @@ try {
         </div>
 
         {/* Navegação de Abas */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
           <button
             onClick={() => setActiveTab('overview')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -214,6 +276,7 @@ try {
           >
             Próximos Jogos ({matches.length})
           </button>
+          
           <button
             onClick={() => setActiveTab('sports')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -222,27 +285,52 @@ try {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            Inscrição nas Modalidades
+            Modalidades
           </button>
+
+          {user?.role === 'REPRESENTATIVE' && (
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                activeTab === 'pending'
+                  ? 'bg-unirv-green text-slate-950'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              Aprovações Pendentes
+              {pendingRegistrations.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] bg-emerald-500 text-slate-950 rounded-full font-black">
+                  {pendingRegistrations.length}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Conteúdo Aba: VISÃO GERAL */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Cards de Métricas Reais */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Card Inscrições */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Minhas Inscrições</span>
+                <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                  {user?.role === 'REPRESENTATIVE' ? 'Solicitações Pendentes' : 'Minhas Inscrições'}
+                </span>
                 <p className="text-2xl font-black text-unirv-green mt-2">
-                  {mySports.length} {mySports.length === 1 ? 'Modalidade' : 'Modalidades'}
+                  {user?.role === 'REPRESENTATIVE'
+                    ? `${pendingRegistrations.length} Pendente(s)`
+                    : `${myRegistrations.length} Modalidade(s)`}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  {mySports.length > 0
-                    ? mySports.map((s) => s.name).join(', ')
-                    : 'Nenhuma modalidade inscrita ainda'}
+                <p className="text-xs text-slate-400 mt-1 truncate">
+                  {user?.role === 'REPRESENTATIVE'
+                    ? 'Aguardando aprovação da diretoria'
+                    : myRegistrations.length > 0
+                    ? myRegistrations.map((r) => r.sport.name).join(', ')
+                    : 'Nenhuma solicitação enviada'}
                 </p>
               </div>
 
+              {/* Card Próxima Partida */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
                 <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Próxima Partida</span>
                 <p className="text-xl font-black text-white mt-2">{matches[0].sport}</p>
@@ -251,7 +339,7 @@ try {
                 </p>
               </div>
 
-              {/* Card de Atlética Vinculada com Escudo / Logo */}
+              {/* Card Atlética Vinculada */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between hover:border-unirv-green/40 transition-all group">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
@@ -265,7 +353,6 @@ try {
                   </p>
                 </div>
 
-                {/* Badge / Escudo da Atlética */}
                 <div className="w-16 h-16 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-2 shadow-inner group-hover:scale-105 transition-transform overflow-hidden relative">
                   {user?.athletics?.acronym ? (
                     <img
@@ -282,7 +369,7 @@ try {
               </div>
             </div>
 
-            {/* Resumo dos Próximos Jogos com Logos das Atléticas nas Partidas */}
+            {/* Resumo de Jogos */}
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-black text-white">Próximos Jogos da Semana</h2>
@@ -391,48 +478,162 @@ try {
           </div>
         )}
 
-        {/* Conteúdo Aba: INSCRIÇÃO NAS MODALIDADES */}
+        {/* Conteúdo Aba: MODALIDADES E MINHAS SOLICITAÇÕES */}
         {activeTab === 'sports' && (
+          <div className="space-y-8">
+            {/* Seção Minhas Inscrições Existentes (para Atleta) */}
+            {user?.role === 'ATHLETE' && myRegistrations.length > 0 && (
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+                <h2 className="text-lg font-black text-white">Minhas Solicitações de Modalidade</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myRegistrations.map((reg) => (
+                    <div key={reg.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-white text-sm">{reg.sport.name}</h4>
+                        <p className="text-xs text-slate-400">Categoria: {reg.sport.gender}</p>
+                      </div>
+                      <div>
+                        {reg.status === 'APPROVED' && (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Aprovado
+                          </span>
+                        )}
+                        {reg.status === 'REJECTED' && (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                            Recusado
+                          </span>
+                        )}
+                        {reg.status === 'PENDING' && (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Pendente
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modalidades Disponíveis na API */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+              <div>
+                <h2 className="text-xl font-black text-white">Modalidades Disponíveis</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Solicite sua inscrição nas modalidades para participar dos treinos e representar sua atlética nos torneios.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sports.map((sport) => {
+                  const registration = myRegistrations.find((r) => r.sportId === sport.id);
+                  const isPending = registration?.status === 'PENDING';
+                  const isApproved = registration?.status === 'APPROVED';
+
+                  return (
+                    <div key={sport.id} className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-3xl">{sport.iconUrl || '🏆'}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-full text-slate-400">
+                            {sport.gender}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-black text-white">{sport.name}</h3>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {sport.shortDesc || 'Modalidade oficial dos jogos universitários.'}
+                        </p>
+                      </div>
+
+                      {/* Botão dinâmico conectado à API */}
+                      {isApproved ? (
+                        <div className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Inscrição Aprovada
+                        </div>
+                      ) : isPending ? (
+                        <div className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-center bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Solicitação Pendente
+                        </div>
+                      ) : (
+                        <button
+                          disabled={submittingSportId === sport.id}
+                          onClick={() => handleRequestRegistration(sport.id)}
+                          className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all bg-unirv-green hover:bg-unirv-mid-green text-slate-950 shadow-lg shadow-unirv-green/10 disabled:opacity-50"
+                        >
+                          {submittingSportId === sport.id ? 'Enviando...' : 'Solicitar Inscrição'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Conteúdo Aba: APROVAÇÕES PENDENTES (Diretoria) */}
+        {activeTab === 'pending' && user?.role === 'REPRESENTATIVE' && (
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
             <div>
-              <h2 className="text-xl font-black text-white">Modalidades Disponíveis</h2>
+              <h2 className="text-xl font-black text-white">Aprovações de Atletas Pendentes</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Solicite sua inscrição nas modalidades para participar dos treinos e representar sua atlética nos torneios.
+                Revise e aprove as solicitações de inscrição dos atletas vinculados à sua atlética.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sports.map((sport) => {
-                const isRegistered = registeredSportIds.includes(sport.id);
-                return (
-                  <div key={sport.id} className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-3xl">{sport.iconUrl || '🏆'}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-full text-slate-400">
-                          {sport.gender}
-                        </span>
+            {pendingRegistrations.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4">Nenhuma solicitação pendente no momento.</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingRegistrations.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl bg-slate-950 border border-slate-800 gap-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.user?.photoUrl ? (
+                        <img
+                          src={item.user.photoUrl}
+                          alt={item.user.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-unirv-green/20 text-unirv-green font-black flex items-center justify-center">
+                          {item.user?.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="font-bold text-white text-sm">{item.user?.name}</h4>
+                        <p className="text-xs text-slate-400">
+                          RA: {item.user?.academicId || 'Não informado'} • Modalidade:{' '}
+                          <span className="text-unirv-green font-bold">
+                            {item.sport.name} ({item.sport.gender})
+                          </span>
+                        </p>
                       </div>
-                      <h3 className="text-base font-black text-white">{sport.name}</h3>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        {sport.shortDesc || 'Modalidade oficial dos jogos universitários.'}
-                      </p>
                     </div>
 
-                    <button
-                      onClick={() => handleToggleSportRegistration(sport.id)}
-                      className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                        isRegistered
-                          ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20'
-                          : 'bg-unirv-green hover:bg-unirv-mid-green text-slate-950 shadow-lg shadow-unirv-green/10'
-                      }`}
-                    >
-                      {isRegistered ? 'Cancelar Inscrição' : 'Solicitar Inscrição'}
-                    </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        disabled={actionLoadingId === item.id}
+                        onClick={() => handleStatusUpdate(item.id, 'REJECTED')}
+                        className="px-4 py-2 text-xs font-bold rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition disabled:opacity-50"
+                      >
+                        Recusar
+                      </button>
+                      <button
+                        disabled={actionLoadingId === item.id}
+                        onClick={() => handleStatusUpdate(item.id, 'APPROVED')}
+                        className="px-4 py-2 text-xs font-bold rounded-xl bg-unirv-green text-slate-950 hover:bg-unirv-mid-green transition disabled:opacity-50"
+                      >
+                        {actionLoadingId === item.id ? 'Processando...' : 'Aprovar'}
+                      </button>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
