@@ -13,7 +13,7 @@ generator client {
 
 enum UserRole {
   ADMIN          // Administrador Geral (Liga/Comissão)
-  REPRESENTATIVE // Representante de Atlética
+  REPRESENTATIVE // Representante de Atlética (Diretor)
   TABLE_OFFICIAL // Mesário
   ATHLETE        // Atleta
   VISITOR        // Público Geral / Visitante
@@ -54,6 +54,12 @@ enum MatchEventType {
   TIME_NOTE_RECORD
 }
 
+enum RegistrationStatus {
+  PENDING   
+  APPROVED  
+  REJECTED     
+}
+
 // ========================================================
 // 2. MODELS
 // ========================================================
@@ -80,6 +86,7 @@ model Athletics {
   trophies       TrophyConquest[]
   teams          Team[]
   rankings       OlympicRanking[]
+  registrations  AthleteSportRegistration[]
 
   @@map("athletics")
 }
@@ -141,26 +148,51 @@ model User {
   athletics      Athletics?   @relation(fields: [athleticsId], references: [id], onDelete: SetNull)
   teams          TeamAthlete[]
   eventsRecorded MatchEvent[]
+  
+  sportRegistrations AthleteSportRegistration[] 
+  officialMatches    Match[]                    @relation("OfficialMatches") 
 
   @@map("users")
 }
 
 model Sport {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique @db.VarChar(50)
-  gender      SportGender
-  type        SportType
-  iconUrl     String?           @db.VarChar(255)
-  shortDesc   String?           @db.VarChar(255)
+  id            Int                        @id @default(autoincrement())
+  name          String                     @unique @db.VarChar(50)
+  gender        SportGender
+  type          SportType
+  iconUrl       String?                    @db.VarChar(255)
+  shortDesc     String?                    @db.VarChar(255)
 
   // Audit & Soft Delete
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  deletedAt   DateTime?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  deletedAt     DateTime?
 
-  tournaments TournamentSport[]
+  tournaments   TournamentSport[]
+  registrations AthleteSportRegistration[]
 
   @@map("sports")
+}
+
+model AthleteSportRegistration {
+  id          Int                @id @default(autoincrement())
+  userId      Int
+  athleticsId Int
+  sportId     Int
+  status      RegistrationStatus @default(PENDING)
+  notes       String?            @db.VarChar(255) 
+
+  // Audit & Soft Delete
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  deletedAt   DateTime?
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  athletics   Athletics          @relation(fields: [athleticsId], references: [id], onDelete: Cascade)
+  sport       Sport              @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sportId])
+  @@map("athlete_sport_registrations")
 }
 
 model Tournament {
@@ -247,8 +279,11 @@ model Match {
   tournamentSportId Int
   homeTeamId        Int?
   awayTeamId        Int?
+  tableOfficialId   Int?            // Mesário responsável
   stage             String          @default("Group Stage") @db.VarChar(50)
   scheduledAt       DateTime
+  startedAt         DateTime?       // Registro de quando o apito inicial aconteceu
+  endedAt           DateTime?       // Registro do apito final
   locationCourt     String?         @db.VarChar(100)
   status            MatchStatus     @default(SCHEDULED)
   homeScore         Int             @default(0)
@@ -265,6 +300,7 @@ model Match {
   homeTeam          Team?           @relation("HomeTeamMatches", fields: [homeTeamId], references: [id])
   awayTeam          Team?           @relation("AwayTeamMatches", fields: [awayTeamId], references: [id])
   winnerTeam        Team?           @relation("WinnerTeamMatches", fields: [winnerTeamId], references: [id])
+  tableOfficial     User?           @relation("OfficialMatches", fields: [tableOfficialId], references: [id], onDelete: SetNull)
 
   events            MatchEvent[]
 
