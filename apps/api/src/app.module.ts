@@ -14,6 +14,7 @@ import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RegistrationsModule } from './registrations/registrations.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     BoardPresidentsModule,
     TrophyConquestsModule,
     SystemSettingsModule,
+    RegistrationsModule,
   ],
   providers: [
     {
