@@ -34,24 +34,38 @@ git clone <URL_DO_REPOSITORIO>
 cd unirv-sports
 ```
 
-### 2. Backend (API NestJS)
+### 2. Primeira vez (instala tudo e prepara o banco)
 
 ```bash
-cd apps/api
-npm install
-cp .env.example .env        # ajuste DATABASE_URL e JWT_SECRET
-npx prisma migrate deploy   # cria as tabelas
-npm run seed                # atléticas, modalidades, usuários de teste e partidas
-npm run start:dev           # http://localhost:3001
+cd apps
+cp api/.env.example api/.env   # ajuste DATABASE_URL e JWT_SECRET
+npm run setup                  # instala dependências, aplica migrations, gera o client e roda o seed
 ```
 
-### 3. Frontend (Next.js)
+### 3. Dia a dia
 
 ```bash
-cd apps/web
-npm install
-npm run dev                 # http://localhost:3000
+cd apps
+npm run dev    # aplica migrations pendentes, gera o Prisma Client e sobe API (3001) + Web (3000) juntos
 ```
+
+`Ctrl+C` encerra os dois. Se um deles cair, o outro também é encerrado.
+
+### Scripts disponíveis (rodar dentro de `apps/`)
+
+| Script | O que faz |
+|---|---|
+| `npm run dev` | Sobe API + Web no mesmo terminal (antes aplica migrations e gera o client) |
+| `npm run setup` | Instalação completa + banco pronto com dados de teste |
+| `npm run db:migrate` | `prisma migrate dev`: cria uma migration nova depois de alterar o `schema.prisma` |
+| `npm run db:deploy` | `prisma migrate deploy`: aplica migrations pendentes (seguro, não apaga dados) |
+| `npm run db:generate` | `prisma generate`: regenera o Prisma Client |
+| `npm run db:status` | Mostra se há migrations pendentes |
+| `npm run db:seed` | Popula o banco (zera placares e lances das partidas de teste) |
+| `npm run db:studio` | Abre o Prisma Studio para ver e editar dados no navegador |
+| `npm run db:reset` | ⚠️ **Apaga o banco inteiro**, reaplica as migrations e roda o seed |
+| `npm run build` | Build de produção da API e do Web |
+| `npm run test` | Testes da API |
 
 Se a API não estiver em `http://localhost:3001`, defina `NEXT_PUBLIC_API_URL` em `apps/web/.env.local`.
 

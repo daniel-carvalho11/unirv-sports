@@ -1,8 +1,25 @@
 {
+  "name": "unirv-sports",
+  "private": true,
+  "scripts": {
+    "setup": "npm install && npm install --prefix api && npm install --prefix web && npm run db:deploy && npm run db:generate && npm run db:seed",
+    "predev": "npm run db:deploy && npm run db:generate",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run start:dev --prefix api\" \"npm run dev --prefix web\"",
+    "db:migrate": "npm run db:migrate --prefix api",
+    "db:deploy": "npm run db:deploy --prefix api",
+    "db:generate": "npm run db:generate --prefix api",
+    "db:status": "npm run db:status --prefix api",
+    "db:seed": "npm run seed --prefix api",
+    "db:studio": "npm run db:studio --prefix api",
+    "db:reset": "npm run db:reset --prefix api",
+    "build": "npm run build --prefix api && npm run build --prefix web",
+    "test": "npm test --prefix api"
+  },
   "dependencies": {
     "@prisma/client": "^6.19.3"
   },
   "devDependencies": {
+    "concurrently": "^9.2.5",
     "prisma": "^6.19.3"
   }
 }
