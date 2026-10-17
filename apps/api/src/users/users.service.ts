@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -8,10 +9,33 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   private readonly SALT_ROUNDS = 10;
 
+  // Nunca devolver o hash da senha nas respostas da API
+  private readonly publicSelect = {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    cpf: true,
+    academicId: true,
+    photoUrl: true,
+    athleticsId: true,
+    createdAt: true,
+    athletics: true,
+  } as const;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
     const { athleticsId, password, ...userData } = createUserDto;
+
+    if (userData.role === UserRole.ADMIN) {
+      throw new ForbiddenException('Não é permitido criar administradores pelo cadastro público.');
+    }
+
+    const needsAthletics = userData.role === UserRole.ATHLETE || userData.role === UserRole.REPRESENTATIVE;
+    if (needsAthletics && !athleticsId) {
+      throw new BadRequestException('Atletas e diretores precisam selecionar uma atlética.');
+    }
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email: userData.email },
@@ -27,27 +51,18 @@ export class UsersService {
       data: {
         ...userData,
         passwordHash,
-        ...(athleticsId && {
+        ...(needsAthletics && {
           athletics: { connect: { id: Number(athleticsId) } },
         }),
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        athletics: true,
-      },
+      select: this.publicSelect,
     });
   }
 
   findAll() {
     return this.prisma.user.findMany({
       where: { deletedAt: null },
-      include: {
-        athletics: true,
-      },
+      select: this.publicSelect,
       orderBy: { name: 'asc' },
     });
   }
@@ -55,9 +70,7 @@ export class UsersService {
   async findOne(id: number) {
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        athletics: true,
-      },
+      select: this.publicSelect,
     });
 
     if (!user) {
@@ -85,6 +98,7 @@ export class UsersService {
           athletics: { connect: { id: Number(athleticsId) } },
         }),
       },
+      select: this.publicSelect,
     });
   }
 
@@ -94,6 +108,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
+      select: this.publicSelect,
     });
   }
 }

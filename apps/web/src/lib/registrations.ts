@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch, SportFromApi } from './api';
 
 export interface SportRegistration {
   id: number;
@@ -6,96 +6,43 @@ export interface SportRegistration {
   sportId: number;
   athleticsId: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
-  sport: {
-    id: number;
-    name: string;
-    gender: string;
-    type: string;
-  };
+  sport: SportFromApi;
   user?: {
     id: number;
     name: string;
     email: string;
-    academicId?: string;
-    photoUrl?: string;
+    academicId?: string | null;
+    photoUrl?: string | null;
   };
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-  }
-
-  return headers;
+export function requestSportRegistration(sportId: number) {
+  return apiFetch<SportRegistration>(
+    '/registrations',
+    { method: 'POST', body: JSON.stringify({ sportId }) },
+    'Falha ao solicitar inscrição.',
+  );
 }
 
-export async function requestSportRegistration(sportId: number): Promise<SportRegistration> {
-  const response = await fetch(`${API_URL}/registrations`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ sportId }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Falha ao solicitar inscrição.');
-  }
-
-  return response.json();
+export function getMyRegistrations() {
+  return apiFetch<SportRegistration[]>('/registrations/my-requests', {}, 'Falha ao buscar solicitações.');
 }
 
-export async function getMyRegistrations(): Promise<SportRegistration[]> {
-  const response = await fetch(`${API_URL}/registrations/my-requests`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Falha ao buscar solicitações.');
-  }
-
-  return response.json();
+export function getPendingRegistrations() {
+  return apiFetch<SportRegistration[]>('/registrations/pending', {}, 'Falha ao buscar solicitações pendentes.');
 }
 
-export async function getPendingRegistrations(): Promise<SportRegistration[]> {
-  const response = await fetch(`${API_URL}/registrations/pending`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Falha ao buscar solicitações pendentes.');
-  }
-
-  return response.json();
+// Todas as inscrições da atlética do diretor (pendentes, aprovadas e recusadas)
+export function getAthleticsRegistrations() {
+  return apiFetch<SportRegistration[]>('/registrations/athletics', {}, 'Falha ao buscar inscrições da atlética.');
 }
 
-export async function updateRegistrationStatus(
-  id: number,
-  status: 'APPROVED' | 'REJECTED',
-  notes?: string,
-): Promise<SportRegistration> {
-  const response = await fetch(`${API_URL}/registrations/${id}/status`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ status, notes }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Falha ao atualizar status.');
-  }
-
-  return response.json();
+export function updateRegistrationStatus(id: number, status: 'APPROVED' | 'REJECTED', notes?: string) {
+  return apiFetch<SportRegistration>(
+    `/registrations/${id}/status`,
+    { method: 'PATCH', body: JSON.stringify({ status, notes }) },
+    'Falha ao atualizar status.',
+  );
 }

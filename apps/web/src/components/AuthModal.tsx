@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginRequest, registerRequest, UserRoleType } from '@/lib/api';
-import { UNIRV_ATHLETICS } from '@/lib/athletics';
+import { AthleticFromApi, getAthletics, loginRequest, registerRequest, UserRoleType } from '@/lib/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,11 +16,23 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRoleType>('VISITOR');
-  const [athleticsId, setAthleticsId] = useState<number>(1);
+  const [athletics, setAthletics] = useState<AthleticFromApi[]>([]);
+  const [athleticsId, setAthleticsId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+
+  // IDs das atléticas vêm do banco: uma lista fixa no front fica dessincronizada do seed
+  useEffect(() => {
+    if (!isOpen || type !== 'register' || athletics.length > 0) return;
+    getAthletics()
+      .then((data) => {
+        setAthletics(data);
+        setAthleticsId((current) => current ?? data[0]?.id ?? null);
+      })
+      .catch(() => setError('Não foi possível carregar a lista de atléticas.'));
+  }, [isOpen, type, athletics.length]);
 
   if (!isOpen) return null;
 
@@ -44,7 +55,7 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
           email,
           password,
           role,
-          ...(showAthleticSelect && { athleticsId }),
+          ...(showAthleticSelect && athleticsId && { athleticsId }),
         });
         alert('Conta criada com sucesso! Agora efetue o login.');
         onSwitchType('login');
@@ -126,11 +137,11 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
                     Sua Atlética
                   </label>
                   <select
-                    value={athleticsId}
+                    value={athleticsId ?? ''}
                     onChange={(e) => setAthleticsId(Number(e.target.value))}
                     className="w-full text-xs rounded-xl border border-slate-700 bg-slate-800 text-white focus:border-unirv-green py-3 px-4 outline-none"
                   >
-                    {UNIRV_ATHLETICS.map((ath) => (
+                    {athletics.map((ath) => (
                       <option key={ath.id} value={ath.id}>
                         {ath.name}
                       </option>
@@ -161,6 +172,7 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
             </label>
             <input
               type="password"
+              minLength={8}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
