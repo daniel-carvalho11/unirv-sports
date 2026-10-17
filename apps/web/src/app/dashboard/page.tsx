@@ -21,6 +21,7 @@ import {
   SportRegistration,
   updateRegistrationStatus,
 } from '@/lib/registrations';
+import { formatClock, mergeMatch, subscribeLiveMatches, useMatchClock } from '@/lib/matches';
 
 interface AthleticInfo {
   id: number;
@@ -73,7 +74,7 @@ const ROLE_BADGE: Record<UserRoleType, { label: string; color: string; intro: st
   TABLE_OFFICIAL: {
     label: 'Oficial de Mesa',
     color: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    intro: 'Confira as partidas sob sua responsabilidade e prepare-se para registrar placar e cronômetro.',
+    intro: 'Abra a mesa de controle das suas partidas para registrar placar, lances e cronômetro em tempo real.',
   },
   ADMIN: {
     label: 'Administrador Geral',
@@ -133,6 +134,7 @@ function MatchCard({ match }: { match: MatchFromApi }) {
   const { date, time } = formatMatchDate(match.scheduledAt);
   const isLive = match.status === 'IN_PROGRESS';
   const showScore = match.status !== 'SCHEDULED';
+  const clock = useMatchClock(isLive ? match : null);
 
   return (
     <div className="bg-slate-950 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
@@ -141,7 +143,7 @@ function MatchCard({ match }: { match: MatchFromApi }) {
           {match.tournamentSport.sport.iconUrl} {match.tournamentSport.sport.name}
         </span>
         <span className={`text-[10px] uppercase ${isLive ? 'text-red-400 font-black animate-pulse' : 'text-slate-500'}`}>
-          {isLive ? '● Ao Vivo' : match.stage}
+          {isLive ? `● Ao Vivo ${formatClock(clock)}` : match.stage}
         </span>
       </div>
 
@@ -228,6 +230,8 @@ export default function DashboardPage() {
     if (!role) return;
 
     getMatches().then(setMatches).catch((err) => handleError(err, 'Falha ao carregar partidas.'));
+    // Placar ao vivo: cada lance registrado pela mesa chega aqui sem recarregar a página
+    const unsubscribe = subscribeLiveMatches((updated) => setMatches((prev) => mergeMatch(prev, updated)));
 
     if (role === 'ATHLETE' || role === 'ADMIN') {
       getSports().then(setSports).catch((err) => handleError(err, 'Falha ao carregar modalidades.'));
@@ -239,6 +243,8 @@ export default function DashboardPage() {
       getPendingRegistrations().then(setPendingRegistrations).catch((err) => handleError(err, 'Falha ao carregar pendências.'));
       getAthleticsRegistrations().then(setAthleticsRegistrations).catch((err) => handleError(err, 'Falha ao carregar atletas.'));
     }
+
+    return unsubscribe;
   }, [role, handleError]);
 
   const upcomingMatches = useMemo(
@@ -687,11 +693,18 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {officiatingMatches.map((match) => (
-                  <div key={match.id} className="space-y-2">
+                  <div key={match.id} className="space-y-3">
                     <MatchCard match={match} />
-                    <p className="text-[10px] text-slate-500 text-center uppercase tracking-wider">
-                      Status: {MATCH_STATUS_LABEL[match.status]}
-                    </p>
+                    <button
+                      onClick={() => router.push(`/dashboard/mesa/${match.id}`)}
+                      className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        match.status === 'IN_PROGRESS'
+                          ? 'bg-red-500 hover:bg-red-400 text-white'
+                          : 'bg-unirv-green hover:bg-unirv-mid-green text-slate-950'
+                      }`}
+                    >
+                      {match.status === 'IN_PROGRESS' ? '● Voltar à Mesa' : 'Abrir Mesa'} • {MATCH_STATUS_LABEL[match.status]}
+                    </button>
                   </div>
                 ))}
               </div>

@@ -72,7 +72,9 @@ Senha de todos: `Unirv@2026`
 | TABLE_OFFICIAL | mesario@unirvsports.dev | — |
 | VISITOR (torcedor) | torcedor@unirvsports.dev | — |
 
-**Fluxo de demonstração:** entre como `atleta2.famerv` → aba *Modalidades* → solicite inscrição (ou reenvie a recusada). Depois entre como `diretor.famerv` → *Aprovações Pendentes* → aprove. O `diretor.grifo` não enxerga nem consegue aprovar pedidos da FAMERV.
+**Mesa de controle (Oficial de Mesa):** entre como `mesario` → *Minhas Partidas* → *Abrir Mesa*. Inicie a partida, lance pontos, faltas e cartões e pause/retome o cronômetro. Com a home aberta em outra aba, o *Feed ao Vivo* atualiza na hora. Em vôlei e beach tennis, use *Fechar Set* ao fim de cada set. O seed já deixa CERBERUS x KROMUS em andamento, e rodar `npm run seed` de novo zera placares, lances e cronômetros.
+
+**Fluxo de inscrição:** entre como `atleta2.famerv` → aba *Modalidades* → solicite inscrição (ou reenvie a recusada). Depois entre como `diretor.famerv` → *Aprovações Pendentes* → aprove. O `diretor.grifo` não enxerga nem consegue aprovar pedidos da FAMERV.
 
 ## Permissões da API
 
@@ -82,5 +84,6 @@ Senha de todos: `Unirv@2026`
 | `POST /users` (cadastro) | Público (não permite criar ADMIN) |
 | `POST /registrations`, `GET /registrations/my-requests` | ATHLETE |
 | `GET /registrations/pending`, `GET /registrations/athletics`, `PATCH /registrations/:id/status` | REPRESENTATIVE (só da própria atlética) |
-| `PATCH /matches/:id`, `POST/PATCH/DELETE /match-events` | TABLE_OFFICIAL |
+| `GET /matches/live/stream` (placar ao vivo via Server-Sent Events) | Público |
+| `GET /matches/officiating`, `POST /matches/:id/clock`, `/score`, `/events`, `/sets/close` | TABLE_OFFICIAL (só nas partidas em que está escalado) |
 | Demais escritas e `GET /users` | ADMIN (tem acesso a tudo) |

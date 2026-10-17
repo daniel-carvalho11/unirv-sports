@@ -103,9 +103,21 @@ function daysFromNow(days: number, hour: number, minute = 0) {
 }
 
 // Mandante x visitante, por modalidade (siglas das atléticas)
-const matchesData = [
+const matchesData: {
+  sport: string;
+  home: string;
+  away: string;
+  stage: string;
+  when: Date;
+  court: string;
+  live?: { homeScore: number; awayScore: number; elapsedSeconds: number };
+}[] = [
   { sport: 'Futsal Masculino', home: 'FAMERV', away: 'GRIFO', stage: 'Fase de Grupos', when: daysFromNow(2, 19, 30), court: 'Ginásio Campus Rio Verde' },
-  { sport: 'Futsal Masculino', home: 'CERBERUS', away: 'KROMUS', stage: 'Fase de Grupos', when: daysFromNow(2, 21), court: 'Ginásio Campus Rio Verde' },
+  // Partida já em andamento (começou há 12 min) para o feed ao vivo da home ter conteúdo na demonstração
+  {
+    sport: 'Futsal Masculino', home: 'CERBERUS', away: 'KROMUS', stage: 'Fase de Grupos', when: new Date(Date.now() - 12 * 60_000), court: 'Ginásio Campus Rio Verde',
+    live: { homeScore: 2, awayScore: 1, elapsedSeconds: 12 * 60 },
+  },
   { sport: 'Vôlei Feminino', home: 'FAMERV', away: 'NEUROTICA', stage: 'Semifinal', when: daysFromNow(4, 10), court: 'Ginásio Campus Rio Verde' },
   { sport: 'Beach Tennis Misto', home: 'ALCATEIA', away: 'AAAFORV', stage: 'Fase de Grupos', when: daysFromNow(5, 16), court: 'Arena de Areia UniRV' },
   { sport: 'Handebol Masculino', home: 'GRIFO', away: 'ENTORSE', stage: 'Quartas de Final', when: daysFromNow(7, 20), court: 'Ginásio Campus Rio Verde' },
@@ -206,16 +218,21 @@ async function seedTournamentAndMatches() {
     }
     const [homeTeamId, awayTeamId] = teamIds;
 
-    // Reexecutar o seed reposiciona as datas para o futuro, sem duplicar partidas
+    // Reexecutar o seed reposiciona as datas e zera placar/cronômetro/lances, sem duplicar partidas
     const matchData = {
       stage: m.stage,
       scheduledAt: m.when,
       locationCourt: m.court,
       tableOfficialId: official.id,
-      status: MatchStatus.SCHEDULED,
-      homeScore: 0,
-      awayScore: 0,
+      status: m.live ? MatchStatus.IN_PROGRESS : MatchStatus.SCHEDULED,
+      homeScore: m.live?.homeScore ?? 0,
+      awayScore: m.live?.awayScore ?? 0,
       stopwatchSeconds: 0,
+      // Cronômetro rodando desde (agora - tempo decorrido)
+      clockRunningSince: m.live ? new Date(Date.now() - m.live.elapsedSeconds * 1000) : null,
+      startedAt: m.live ? m.when : null,
+      endedAt: null,
+      winnerTeamId: null,
     };
 
     const existing = await prisma.match.findFirst({
@@ -223,6 +240,7 @@ async function seedTournamentAndMatches() {
     });
 
     if (existing) {
+      await prisma.matchEvent.deleteMany({ where: { matchId: existing.id } });
       await prisma.match.update({ where: { id: existing.id }, data: matchData });
     } else {
       await prisma.match.create({

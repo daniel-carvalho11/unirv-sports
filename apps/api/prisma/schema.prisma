@@ -288,7 +288,8 @@ model Match {
   status            MatchStatus     @default(SCHEDULED)
   homeScore         Int             @default(0)
   awayScore         Int             @default(0)
-  stopwatchSeconds  Int             @default(0)
+  stopwatchSeconds  Int             @default(0) // Tempo acumulado até a última pausa
+  clockRunningSince DateTime?       // Preenchido enquanto o cronômetro está rodando
   winnerTeamId      Int?
 
   // Audit & Soft Delete

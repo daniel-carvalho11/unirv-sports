@@ -43,10 +43,15 @@ export interface MatchFromApi {
   tableOfficialId: number | null;
   homeTeam: TeamFromApi | null;
   awayTeam: TeamFromApi | null;
+  winnerTeam?: TeamFromApi | null;
   tournamentSport: {
     sport: SportFromApi;
     tournament: { id: number; name: string };
   };
+  // Campos calculados pela API (cronômetro e sets)
+  clockRunning: boolean;
+  elapsedSeconds: number;
+  sets: { home: number; away: number };
 }
 
 // Erro com status HTTP, para a UI distinguir sessão expirada (401) de outros erros

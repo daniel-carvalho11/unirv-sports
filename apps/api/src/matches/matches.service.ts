@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMatchDto } from './dto/create-match.dto';
+import { withClock } from './live/match-clock';
 import { UpdateMatchDto } from './dto/update-match.dto';
 
 @Injectable()
@@ -34,8 +35,8 @@ export class MatchesService {
     });
   }
 
-  findAll() {
-    return this.prisma.match.findMany({
+  async findAll() {
+    const matches = await this.prisma.match.findMany({
       where: { deletedAt: null },
       include: {
         tournamentSport: {
@@ -47,10 +48,11 @@ export class MatchesService {
         homeTeam: { include: { athletics: true } },
         awayTeam: { include: { athletics: true } },
         winnerTeam: { include: { athletics: true } },
-        events: true,
+        events: { where: { deletedAt: null } },
       },
       orderBy: { scheduledAt: 'asc' },
     });
+    return matches.map(withClock);
   }
 
   async findOne(id: number) {

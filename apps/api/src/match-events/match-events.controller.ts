@@ -10,7 +10,7 @@ import { UpdateMatchEventDto } from './dto/update-match-event.dto';
 export class MatchEventsController {
   constructor(private readonly matchEventsService: MatchEventsService) {}
 
-  @Roles(UserRole.ADMIN, UserRole.TABLE_OFFICIAL)
+  @Roles(UserRole.ADMIN)
   @Post()
   create(@Body() createMatchEventDto: CreateMatchEventDto) {
     return this.matchEventsService.create(createMatchEventDto);
@@ -28,7 +28,7 @@ export class MatchEventsController {
     return this.matchEventsService.findOne(id);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.TABLE_OFFICIAL)
+  @Roles(UserRole.ADMIN)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -37,7 +37,7 @@ export class MatchEventsController {
     return this.matchEventsService.update(id, updateMatchEventDto);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.TABLE_OFFICIAL)
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.matchEventsService.remove(id);
