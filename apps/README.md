@@ -117,8 +117,9 @@ Enquanto o contador de lançamento não zerar, a plataforma só aceita **cadastr
 | `CORS_ORIGIN` | URL pública do front (ex.: `https://unirv-sports-web.onrender.com`) |
 | `LOGIN_ENABLED` | `false` até o lançamento, depois `true` |
 
-Build: `npm install && npx prisma generate && npm run build && npx prisma migrate deploy` · Start: `npm run start:prod`.
-Com `NODE_ENV=production`, o seed cria só atléticas e modalidades (nunca os usuários de teste).
+Build: `npm ci --include=dev && npx prisma generate && npm run build && npx prisma migrate deploy && npx prisma db seed` · Start: `npm run start:prod`.
+O `--include=dev` é necessário: com `NODE_ENV=production` o npm pula as devDependencies (Nest CLI, TypeScript, Prisma CLI, ts-node) e o build falha.
+Com `NODE_ENV=production`, o seed cria só atléticas e modalidades (nunca os usuários de teste) e usa upsert, então pode rodar a cada deploy.
 
 **Web** (`apps/web`): `NEXT_PUBLIC_API_URL` (URL da API), `NEXT_PUBLIC_LOGIN_ENABLED` (`false`/`true`) e `NEXT_PUBLIC_LAUNCH_DATE` (ex.: `2026-11-16T09:00:00-03:00`).
 Variáveis `NEXT_PUBLIC_` são fixadas no build: ao mudar, faça um novo deploy do web.
