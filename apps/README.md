@@ -95,9 +95,32 @@ Senha de todos: `Unirv@2026`
 | Rota | Acesso |
 |---|---|
 | `GET /sports`, `/athletics`, `/matches`, `/tournaments`, `/olympic-ranking` | Público |
-| `POST /users` (cadastro) | Público (não permite criar ADMIN) |
+| `POST /auth/login` | Público, mas bloqueado enquanto `LOGIN_ENABLED` não for `true` (pré-lançamento) |
+| `POST /users` (cadastro) | Público, só como `VISITOR` ou `ATHLETE` (diretor e mesário são promovidos pelo ADMIN) |
 | `POST /registrations`, `GET /registrations/my-requests` | ATHLETE |
 | `GET /registrations/pending`, `GET /registrations/athletics`, `PATCH /registrations/:id/status` | REPRESENTATIVE (só da própria atlética) |
 | `GET /matches/live/stream` (placar ao vivo via Server-Sent Events) | Público |
 | `GET /matches/officiating`, `POST /matches/:id/clock`, `/score`, `/events`, `/sets/close` | TABLE_OFFICIAL (só nas partidas em que está escalado) |
 | Demais escritas e `GET /users` | ADMIN (tem acesso a tudo) |
+
+## Produção (Render)
+
+Enquanto o contador de lançamento não zerar, a plataforma só aceita **cadastros**: o login e todas as rotas autenticadas respondem 403.
+
+**API** (`apps/api`), variáveis obrigatórias:
+
+| Variável | Valor |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | String de conexão do MySQL |
+| `JWT_SECRET` | Mínimo 32 caracteres: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
+| `CORS_ORIGIN` | URL pública do front (ex.: `https://unirv-sports-web.onrender.com`) |
+| `LOGIN_ENABLED` | `false` até o lançamento, depois `true` |
+
+Build: `npm install && npx prisma generate && npm run build && npx prisma migrate deploy` · Start: `npm run start:prod`.
+Com `NODE_ENV=production`, o seed cria só atléticas e modalidades (nunca os usuários de teste).
+
+**Web** (`apps/web`): `NEXT_PUBLIC_API_URL` (URL da API), `NEXT_PUBLIC_LOGIN_ENABLED` (`false`/`true`) e `NEXT_PUBLIC_LAUNCH_DATE` (ex.: `2026-11-16T09:00:00-03:00`).
+Variáveis `NEXT_PUBLIC_` são fixadas no build: ao mudar, faça um novo deploy do web.
+
+**Para liberar o login no lançamento:** `LOGIN_ENABLED=true` na API e `NEXT_PUBLIC_LOGIN_ENABLED=true` no web (com redeploy).
