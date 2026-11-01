@@ -10,6 +10,7 @@ import { AthleticsGridSection } from '@/components/AthleticsGridSection';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { CountdownTimer } from '@/components/CountDownTimer';
+import { LAUNCH_DATE, LOGIN_ENABLED } from '@/lib/launch';
 
 export default function Home() {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; type: 'login' | 'register' }>({
@@ -17,8 +18,9 @@ export default function Home() {
     type: 'login',
   });
 
+  // Com o login bloqueado o modal só abre em modo cadastro
   const handleOpenAuth = (type: 'login' | 'register') => {
-    setAuthModal({ isOpen: true, type });
+    setAuthModal({ isOpen: true, type: LOGIN_ENABLED ? type : 'register' });
   };
 
   const handleCloseAuth = () => {
@@ -32,7 +34,7 @@ export default function Home() {
       
       <section className="max-w-7xl mx-auto px-6 py-6">
         <CountdownTimer
-          targetDate="2026-10-15T09:00:00"
+          targetDate={LAUNCH_DATE}
           title="Abertura Oficial dos Jogos Universitários UniRV"
         />
       </section>
@@ -47,7 +49,7 @@ export default function Home() {
         isOpen={authModal.isOpen}
         type={authModal.type}
         onClose={handleCloseAuth}
-        onSwitchType={(type) => setAuthModal({ isOpen: true, type })}
+        onSwitchType={handleOpenAuth}
       />
     </main>
   );

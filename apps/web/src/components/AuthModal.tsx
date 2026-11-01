@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AthleticFromApi, getAthletics, loginRequest, registerRequest, UserRoleType } from '@/lib/api';
+import { LOGIN_ENABLED } from '@/lib/launch';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
   const [athleticsId, setAthleticsId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState(false);
 
   const router = useRouter();
 
@@ -36,7 +38,8 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
 
   if (!isOpen) return null;
 
-  const showAthleticSelect = role === 'ATHLETE' || role === 'REPRESENTATIVE';
+  // Diretoria e mesário não se cadastram por aqui: o ADMIN promove o usuário depois
+  const showAthleticSelect = role === 'ATHLETE';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +60,12 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
           role,
           ...(showAthleticSelect && athleticsId && { athleticsId }),
         });
-        alert('Conta criada com sucesso! Agora efetue o login.');
-        onSwitchType('login');
+        if (LOGIN_ENABLED) {
+          alert('Conta criada com sucesso! Agora efetue o login.');
+          onSwitchType('login');
+        } else {
+          setRegistered(true);
+        }
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -82,6 +89,26 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
           ✕
         </button>
 
+        {registered ? (
+          <div className="text-center py-4">
+            <h3 className="text-2xl font-black text-white mb-2">Cadastro realizado!</h3>
+            <p className="text-sm text-slate-300 mb-6">
+              Sua conta foi criada. O acesso à plataforma será liberado no lançamento oficial. Fique de olho no
+              contador!
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setRegistered(false);
+                onClose();
+              }}
+              className="w-full py-3.5 bg-unirv-green hover:bg-unirv-mid-green text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl"
+            >
+              Fechar
+            </button>
+          </div>
+        ) : (
+        <>
         <h3 className="text-2xl font-black text-white mb-1">
           {type === 'login' ? 'Área de Login' : 'Criar Nova Conta'}
         </h3>
@@ -125,8 +152,6 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
                 >
                   <option value="VISITOR">Aluno / Torcedor</option>
                   <option value="ATHLETE">Atleta Universitário</option>
-                  <option value="REPRESENTATIVE">Diretoria de Atlética</option>
-                  <option value="TABLE_OFFICIAL">Oficial de Mesa</option>
                 </select>
               </div>
 
@@ -194,6 +219,7 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
           </button>
         </form>
 
+        {LOGIN_ENABLED && (
         <div className="pt-6 mt-6 border-t border-slate-800 text-center">
           <p className="text-xs text-slate-400">
             {type === 'login' ? 'Ainda não tem conta?' : 'Já possui uma conta?'}{' '}
@@ -206,6 +232,9 @@ export function AuthModal({ isOpen, type, onClose, onSwitchType }: AuthModalProp
             </button>
           </p>
         </div>
+        )}
+        </>
+        )}
       </div>
     </div>
   );

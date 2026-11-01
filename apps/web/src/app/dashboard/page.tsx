@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { LOGIN_ENABLED } from '@/lib/launch';
 import {
   ApiError,
   clearSession,
@@ -211,7 +212,9 @@ export default function DashboardPage() {
 
   // Sessão: confirma o token com /auth/profile e usa os dados atualizados do usuário (role/atlética)
   useEffect(() => {
-    if (!localStorage.getItem('accessToken')) {
+    // Pré-lançamento: área logada fechada, descarta qualquer sessão antiga
+    if (!LOGIN_ENABLED) clearSession();
+    if (!LOGIN_ENABLED || !localStorage.getItem('accessToken')) {
       router.push('/');
       return;
     }

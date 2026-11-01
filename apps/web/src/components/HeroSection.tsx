@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { LOGIN_ENABLED } from '@/lib/launch';
 
 interface HeroSectionProps {
   onOpenAuth: (type: 'login' | 'register') => void;
@@ -34,14 +35,16 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
             onClick={() => onOpenAuth('register')}
             className="w-full sm:w-auto bg-unirv-green hover:bg-unirv-mid-green text-slate-950 font-bold px-8 py-4 rounded-xl transition-all duration-200 shadow-lg shadow-unirv-green/20 hover:scale-105 active:scale-95"
           >
-            Cadastrar Atlética / Perfil
+            Fazer meu Cadastro
           </button>
-          <button
-            onClick={() => onOpenAuth('login')}
-            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-xl backdrop-blur-md border border-white/20 transition-all duration-200 hover:border-white/40"
-          >
-            Entrar na Conta
-          </button>
+          {LOGIN_ENABLED && (
+            <button
+              onClick={() => onOpenAuth('login')}
+              className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-xl backdrop-blur-md border border-white/20 transition-all duration-200 hover:border-white/40"
+            >
+              Entrar na Conta
+            </button>
+          )}
         </div>
       </div>
     </section>

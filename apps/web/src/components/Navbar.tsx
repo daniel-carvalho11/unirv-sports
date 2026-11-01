@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { LOGIN_ENABLED } from '@/lib/launch';
 
 interface NavbarProps {
   onOpenAuth: (type: 'login' | 'register') => void;
@@ -25,12 +26,14 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
           <a href="#atleticas" className="hover:text-white transition-colors">Atléticas</a>
         </nav>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => onOpenAuth('login')}
-            className="text-sm font-semibold text-white hover:text-unirv-green transition-colors px-3 py-1.5"
-          >
-            Entrar
-          </button>
+          {LOGIN_ENABLED && (
+            <button
+              onClick={() => onOpenAuth('login')}
+              className="text-sm font-semibold text-white hover:text-unirv-green transition-colors px-3 py-1.5"
+            >
+              Entrar
+            </button>
+          )}
           <button
             onClick={() => onOpenAuth('register')}
             className="text-sm font-bold bg-unirv-green hover:bg-unirv-mid-green text-slate-900 px-4 py-2 rounded-lg transition-all"

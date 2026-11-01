@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { LOGIN_ENABLED } from '@/lib/launch';
 import { ApiError, clearSession } from '@/lib/api';
 import {
   addEvent,
@@ -88,7 +89,9 @@ export default function TableOfficialPanelPage() {
   );
 
   useEffect(() => {
-    if (!localStorage.getItem('accessToken')) {
+    // Pré-lançamento: área logada fechada, descarta qualquer sessão antiga
+    if (!LOGIN_ENABLED) clearSession();
+    if (!LOGIN_ENABLED || !localStorage.getItem('accessToken')) {
       router.push('/');
       return;
     }
