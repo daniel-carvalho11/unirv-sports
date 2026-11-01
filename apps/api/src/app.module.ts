@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AthleticsModule } from './athletics/athletics.module';
 import { SportsModule } from './sports/sports.module';
@@ -18,6 +19,8 @@ import { RegistrationsModule } from './registrations/registrations.module';
 
 @Module({
   imports: [
+    // Limite padrão por IP: 120 requisições/minuto (login e cadastro têm limites próprios, bem menores)
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
     AuthModule,
     AthleticsModule,
@@ -33,6 +36,10 @@ import { RegistrationsModule } from './registrations/registrations.module';
     RegistrationsModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

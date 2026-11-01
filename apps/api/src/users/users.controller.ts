@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -10,10 +11,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Public() // Libera o cadastro de novos usuários sem exigir token JWT (o service bloqueia role ADMIN)
+  @Public() // Cadastro aberto sem token JWT, mas só como torcedor ou atleta (ver RegisterUserDto)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } }) // Evita criação de contas em massa por um mesmo IP
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(@Body() registerUserDto: RegisterUserDto) {
+    return this.usersService.create(registerUserDto);
   }
 
   @Roles(UserRole.ADMIN)

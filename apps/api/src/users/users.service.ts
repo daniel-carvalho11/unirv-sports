@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { RegisterUserDto, PUBLIC_SIGNUP_ROLES } from './dto/register-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
@@ -25,16 +25,24 @@ export class UsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const { athleticsId, password, ...userData } = createUserDto;
+  async create(registerUserDto: RegisterUserDto) {
+    const { athleticsId, password, ...userData } = registerUserDto;
 
-    if (userData.role === UserRole.ADMIN) {
-      throw new ForbiddenException('Não é permitido criar administradores pelo cadastro público.');
+    // Segunda barreira além do DTO: o cadastro público nunca cria perfis com poder de aprovação ou de mesa
+    if (!(PUBLIC_SIGNUP_ROLES as readonly UserRole[]).includes(userData.role)) {
+      throw new ForbiddenException('Este perfil não pode ser criado pelo cadastro público.');
     }
 
-    const needsAthletics = userData.role === UserRole.ATHLETE || userData.role === UserRole.REPRESENTATIVE;
+    const needsAthletics = userData.role === UserRole.ATHLETE;
     if (needsAthletics && !athleticsId) {
-      throw new BadRequestException('Atletas e diretores precisam selecionar uma atlética.');
+      throw new BadRequestException('Atletas precisam selecionar uma atlética.');
+    }
+
+    if (needsAthletics) {
+      const athletics = await this.prisma.athletics.findFirst({ where: { id: athleticsId, deletedAt: null } });
+      if (!athletics) {
+        throw new BadRequestException('Atlética não encontrada.');
+      }
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -47,16 +55,24 @@ export class UsersService {
 
     const passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
 
-    return this.prisma.user.create({
-      data: {
-        ...userData,
-        passwordHash,
-        ...(needsAthletics && {
-          athletics: { connect: { id: Number(athleticsId) } },
-        }),
-      },
-      select: this.publicSelect,
-    });
+    try {
+      return await this.prisma.user.create({
+        data: {
+          ...userData,
+          passwordHash,
+          ...(needsAthletics && {
+            athletics: { connect: { id: Number(athleticsId) } },
+          }),
+        },
+        select: this.publicSelect,
+      });
+    } catch (error) {
+      // Dois cadastros simultâneos com o mesmo e-mail passam pela checagem acima; o índice único barra o segundo
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Este e-mail já está cadastrado na plataforma.');
+      }
+      throw error;
+    }
   }
 
   findAll() {

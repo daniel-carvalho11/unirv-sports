@@ -251,6 +251,15 @@ async function seedTournamentAndMatches() {
 }
 
 async function main() {
+  // Em produção só entram os dados de referência: os usuários de teste têm senha pública (inclusive um ADMIN)
+  if (process.env.NODE_ENV === 'production') {
+    console.log('NODE_ENV=production: populando apenas atléticas e modalidades (sem usuários e partidas de teste)...');
+    await seedAthletics();
+    await seedSports();
+    console.log('Seed de produção concluído.');
+    return;
+  }
+
   console.log('Populando banco: atléticas, modalidades, usuários, inscrições e partidas...');
 
   await seedAthletics();
