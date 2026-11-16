@@ -121,7 +121,7 @@ Build: `npm ci --include=dev && npx prisma generate && npm run build && npx pris
 O `--include=dev` é necessário: com `NODE_ENV=production` o npm pula as devDependencies (Nest CLI, TypeScript, Prisma CLI, ts-node) e o build falha.
 Com `NODE_ENV=production`, o seed cria só atléticas e modalidades (nunca os usuários de teste) e usa upsert, então pode rodar a cada deploy.
 
-**Web** (`apps/web`): `NEXT_PUBLIC_API_URL` (URL da API), `NEXT_PUBLIC_LOGIN_ENABLED` (`false`/`true`) e `NEXT_PUBLIC_LAUNCH_DATE` (ex.: `2026-11-16T09:00:00-03:00`).
+**Web** (`apps/web`): `NEXT_PUBLIC_API_URL` (URL da API), `NEXT_PUBLIC_LOGIN_ENABLED` (`false`/`true`) e `NEXT_PUBLIC_LAUNCH_DATE` (ex.: `2026-12-01T09:00:00-03:00`).
 Variáveis `NEXT_PUBLIC_` são fixadas no build: ao mudar, faça um novo deploy do web.
 
 **Para liberar o login no lançamento:** `LOGIN_ENABLED=true` na API e `NEXT_PUBLIC_LOGIN_ENABLED=true` no web (com redeploy).

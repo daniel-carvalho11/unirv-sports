@@ -6,4 +6,4 @@ const loginFlag = process.env.NEXT_PUBLIC_LOGIN_ENABLED;
 export const LOGIN_ENABLED = loginFlag ? loginFlag === 'true' : process.env.NODE_ENV !== 'production';
 
 // Data/hora do lançamento exibida no contador (horário de Brasília)
-export const LAUNCH_DATE = process.env.NEXT_PUBLIC_LAUNCH_DATE || '2026-11-16T09:00:00-03:00';
+export const LAUNCH_DATE = process.env.NEXT_PUBLIC_LAUNCH_DATE || '2026-12-01T09:00:00-03:00';
