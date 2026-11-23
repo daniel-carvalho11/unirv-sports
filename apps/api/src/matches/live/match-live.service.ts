@@ -1,9 +1,27 @@
-import { BadRequestException, ForbiddenException, Injectable, MessageEvent, NotFoundException } from '@nestjs/common';
-import { Match, MatchEventType, MatchStatus, Prisma, SportType, UserRole } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  MessageEvent,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Match,
+  MatchEventType,
+  MatchStatus,
+  Prisma,
+  SportType,
+  UserRole,
+} from '@prisma/client';
 import { Observable, Subject, map } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { elapsedSeconds, setsWon, withClock } from './match-clock';
-import { ClockAction, MatchLiveEventDto, MatchScoreDto, MatchSide } from './match-live.dto';
+import {
+  ClockAction,
+  MatchLiveEventDto,
+  MatchScoreDto,
+  MatchSide,
+} from './match-live.dto';
 
 interface AuthUser {
   id: number;
@@ -17,7 +35,10 @@ const liveInclude = {
   winnerTeam: { include: { athletics: true } },
   events: {
     where: { deletedAt: null },
-    include: { team: { include: { athletics: true } }, user: { select: { id: true, name: true } } },
+    include: {
+      team: { include: { athletics: true } },
+      user: { select: { id: true, name: true } },
+    },
     orderBy: { createdAt: 'desc' },
   },
 } satisfies Prisma.MatchInclude;
@@ -27,17 +48,25 @@ type LiveMatch = Prisma.MatchGetPayload<{ include: typeof liveInclude }>;
 @Injectable()
 export class MatchLiveService {
   // Canal em memória: cada alteração feita pela mesa é empurrada para quem está assistindo via SSE
-  private readonly updates$ = new Subject<ReturnType<typeof withClock<LiveMatch>>>();
+  private readonly updates$ = new Subject<
+    ReturnType<typeof withClock<LiveMatch>>
+  >();
 
   constructor(private readonly prisma: PrismaService) {}
 
   stream(): Observable<MessageEvent> {
-    return this.updates$.pipe(map((match) => ({ type: 'match-update', data: match })));
+    return this.updates$.pipe(
+      map((match) => ({ type: 'match-update', data: match })),
+    );
   }
 
   async findOfficiating(userId: number) {
     const matches = await this.prisma.match.findMany({
-      where: { tableOfficialId: userId, deletedAt: null, status: { not: MatchStatus.CANCELED } },
+      where: {
+        tableOfficialId: userId,
+        deletedAt: null,
+        status: { not: MatchStatus.CANCELED },
+      },
       include: liveInclude,
       orderBy: { scheduledAt: 'asc' },
     });
@@ -52,7 +81,10 @@ export class MatchLiveService {
     const match = await this.loadForControl(id, user);
     const now = new Date();
 
-    if (match.status === MatchStatus.FINISHED || match.status === MatchStatus.CANCELED) {
+    if (
+      match.status === MatchStatus.FINISHED ||
+      match.status === MatchStatus.CANCELED
+    ) {
       throw new BadRequestException('A partida já foi encerrada.');
     }
 
@@ -70,12 +102,17 @@ export class MatchLiveService {
 
       case 'PAUSE':
         if (!match.clockRunningSince) return this.publish(id);
-        data = { stopwatchSeconds: elapsedSeconds(match, now), clockRunningSince: null };
+        data = {
+          stopwatchSeconds: elapsedSeconds(match, now),
+          clockRunningSince: null,
+        };
         break;
 
       case 'FINISH': {
         if (match.status !== MatchStatus.IN_PROGRESS) {
-          throw new BadRequestException('Só é possível encerrar uma partida em andamento.');
+          throw new BadRequestException(
+            'Só é possível encerrar uma partida em andamento.',
+          );
         }
         data = {
           status: MatchStatus.FINISHED,
@@ -121,9 +158,14 @@ export class MatchLiveService {
       }
 
       // Correção: remove (soft delete) o último lançamento de ponto daquela equipe
-      const lastPoint = match.events.find((e) => e.type === MatchEventType.GOAL_POINT && e.teamId === teamId);
+      const lastPoint = match.events.find(
+        (e) => e.type === MatchEventType.GOAL_POINT && e.teamId === teamId,
+      );
       if (lastPoint) {
-        await tx.matchEvent.update({ where: { id: lastPoint.id }, data: { deletedAt: new Date() } });
+        await tx.matchEvent.update({
+          where: { id: lastPoint.id },
+          data: { deletedAt: new Date() },
+        });
       }
     });
 
@@ -159,7 +201,8 @@ export class MatchLiveService {
       throw new BadRequestException('Não é possível fechar um set empatado.');
     }
 
-    const winnerSide: MatchSide = match.homeScore > match.awayScore ? 'HOME' : 'AWAY';
+    const winnerSide: MatchSide =
+      match.homeScore > match.awayScore ? 'HOME' : 'AWAY';
 
     await this.prisma.$transaction([
       this.prisma.matchEvent.create({
@@ -171,7 +214,10 @@ export class MatchLiveService {
           matchTimeSec: elapsedSeconds(match),
         },
       }),
-      this.prisma.match.update({ where: { id }, data: { homeScore: 0, awayScore: 0 } }),
+      this.prisma.match.update({
+        where: { id },
+        data: { homeScore: 0, awayScore: 0 },
+      }),
     ]);
 
     return this.publish(id);
@@ -184,7 +230,10 @@ export class MatchLiveService {
   }
 
   private async load(id: number) {
-    const match = await this.prisma.match.findFirst({ where: { id, deletedAt: null }, include: liveInclude });
+    const match = await this.prisma.match.findFirst({
+      where: { id, deletedAt: null },
+      include: liveInclude,
+    });
     if (!match) {
       throw new NotFoundException(`Partida com ID ${id} não encontrada.`);
     }
@@ -195,21 +244,27 @@ export class MatchLiveService {
   private async loadForControl(id: number, user: AuthUser) {
     const match = await this.load(id);
     if (user.role !== UserRole.ADMIN && match.tableOfficialId !== user.id) {
-      throw new ForbiddenException('Você não é o oficial de mesa desta partida.');
+      throw new ForbiddenException(
+        'Você não é o oficial de mesa desta partida.',
+      );
     }
     return match;
   }
 
   private ensureInProgress(match: Match) {
     if (match.status !== MatchStatus.IN_PROGRESS) {
-      throw new BadRequestException('Inicie a partida antes de registrar lances.');
+      throw new BadRequestException(
+        'Inicie a partida antes de registrar lances.',
+      );
     }
   }
 
   private teamIdFor(match: Match, side: MatchSide) {
     const teamId = side === 'HOME' ? match.homeTeamId : match.awayTeamId;
     if (!teamId) {
-      throw new BadRequestException('Equipe ainda não definida para esta partida.');
+      throw new BadRequestException(
+        'Equipe ainda não definida para esta partida.',
+      );
     }
     return teamId;
   }

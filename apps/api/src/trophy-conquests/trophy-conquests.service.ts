@@ -33,7 +33,9 @@ export class TrophyConquestsService {
     });
 
     if (!trophy) {
-      throw new NotFoundException(`Conquista/Troféu com ID ${id} não encontrado.`);
+      throw new NotFoundException(
+        `Conquista/Troféu com ID ${id} não encontrado.`,
+      );
     }
 
     return trophy;

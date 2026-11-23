@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Get, Request, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -15,7 +22,9 @@ export class AuthController {
   login(@Body() loginDto: LoginDto) {
     // Pré-lançamento: só cadastro. Liberar com LOGIN_ENABLED=true quando o contador zerar
     if (!isLoginEnabled()) {
-      throw new ForbiddenException('O login será liberado no lançamento da plataforma. Por enquanto, apenas cadastros.');
+      throw new ForbiddenException(
+        'O login será liberado no lançamento da plataforma. Por enquanto, apenas cadastros.',
+      );
     }
     return this.authService.login(loginDto);
   }

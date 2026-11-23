@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { RegistrationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
@@ -14,7 +19,9 @@ export class RegistrationsService {
     });
 
     if (!user || !user.athleticsId) {
-      throw new BadRequestException('Atleta precisa estar vinculado a uma atlética para se inscrever.');
+      throw new BadRequestException(
+        'Atleta precisa estar vinculado a uma atlética para se inscrever.',
+      );
     }
 
     const sport = await this.prisma.sport.findFirst({
@@ -36,7 +43,11 @@ export class RegistrationsService {
     });
 
     // Solicitação recusada pode ser reenviada: reaproveita o registro por causa do @@unique([userId, sportId])
-    if (existing && existing.status === RegistrationStatus.REJECTED && !existing.deletedAt) {
+    if (
+      existing &&
+      existing.status === RegistrationStatus.REJECTED &&
+      !existing.deletedAt
+    ) {
       return this.prisma.athleteSportRegistration.update({
         where: { id: existing.id },
         data: {
@@ -49,7 +60,9 @@ export class RegistrationsService {
     }
 
     if (existing) {
-      throw new BadRequestException('Já existe uma solicitação ou inscrição efetuada para esta modalidade.');
+      throw new BadRequestException(
+        'Já existe uma solicitação ou inscrição efetuada para esta modalidade.',
+      );
     }
 
     return this.prisma.athleteSportRegistration.create({
@@ -84,13 +97,19 @@ export class RegistrationsService {
 
     return this.prisma.athleteSportRegistration.findMany({
       where: {
-        athleticsId: athleticsId!,
+        athleticsId: athleticsId,
         status: RegistrationStatus.PENDING,
         deletedAt: null,
       },
       include: {
         user: {
-          select: { id: true, name: true, email: true, academicId: true, photoUrl: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            academicId: true,
+            photoUrl: true,
+          },
         },
         sport: true,
       },
@@ -102,10 +121,16 @@ export class RegistrationsService {
     this.ensureAthletics(athleticsId);
 
     return this.prisma.athleteSportRegistration.findMany({
-      where: { athleticsId: athleticsId!, deletedAt: null },
+      where: { athleticsId: athleticsId, deletedAt: null },
       include: {
         user: {
-          select: { id: true, name: true, email: true, academicId: true, photoUrl: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            academicId: true,
+            photoUrl: true,
+          },
         },
         sport: true,
       },
@@ -129,7 +154,9 @@ export class RegistrationsService {
     }
 
     if (registration.athleticsId !== directorAthleticsId) {
-      throw new ForbiddenException('Apenas diretores da mesma atlética podem atualizar esta solicitação.');
+      throw new ForbiddenException(
+        'Apenas diretores da mesma atlética podem atualizar esta solicitação.',
+      );
     }
 
     return this.prisma.athleteSportRegistration.update({
@@ -144,7 +171,9 @@ export class RegistrationsService {
 
   private ensureAthletics(athleticsId: number | null | undefined) {
     if (!athleticsId) {
-      throw new ForbiddenException('Seu usuário não está vinculado a nenhuma atlética.');
+      throw new ForbiddenException(
+        'Seu usuário não está vinculado a nenhuma atlética.',
+      );
     }
   }
 }

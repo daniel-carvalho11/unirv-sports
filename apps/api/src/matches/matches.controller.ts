@@ -1,10 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Request, Sse } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  Request,
+  Sse,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { MatchesService } from './matches.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { UpdateMatchDto } from './dto/update-match.dto';
 import { MatchLiveService } from './live/match-live.service';
-import { MatchClockDto, MatchLiveEventDto, MatchScoreDto } from './live/match-live.dto';
+import {
+  MatchClockDto,
+  MatchLiveEventDto,
+  MatchScoreDto,
+} from './live/match-live.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 
@@ -50,19 +65,31 @@ export class MatchesController {
 
   @Roles(UserRole.TABLE_OFFICIAL)
   @Post(':id/clock')
-  clock(@Request() req, @Param('id', ParseIntPipe) id: number, @Body() dto: MatchClockDto) {
+  clock(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: MatchClockDto,
+  ) {
     return this.matchLiveService.clock(id, req.user, dto.action);
   }
 
   @Roles(UserRole.TABLE_OFFICIAL)
   @Post(':id/score')
-  score(@Request() req, @Param('id', ParseIntPipe) id: number, @Body() dto: MatchScoreDto) {
+  score(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: MatchScoreDto,
+  ) {
     return this.matchLiveService.score(id, req.user, dto);
   }
 
   @Roles(UserRole.TABLE_OFFICIAL)
   @Post(':id/events')
-  registerEvent(@Request() req, @Param('id', ParseIntPipe) id: number, @Body() dto: MatchLiveEventDto) {
+  registerEvent(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: MatchLiveEventDto,
+  ) {
     return this.matchLiveService.registerEvent(id, req.user, dto);
   }
 

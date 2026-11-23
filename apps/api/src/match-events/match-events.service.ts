@@ -46,7 +46,9 @@ export class MatchEventsService {
     });
 
     if (!event) {
-      throw new NotFoundException(`Evento de partida com ID ${id} não encontrado.`);
+      throw new NotFoundException(
+        `Evento de partida com ID ${id} não encontrado.`,
+      );
     }
 
     return event;

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -8,7 +18,9 @@ import { UpdateBoardPresidentDto } from './dto/update-board-president.dto';
 
 @Controller('board-presidents')
 export class BoardPresidentsController {
-  constructor(private readonly boardPresidentsService: BoardPresidentsService) {}
+  constructor(
+    private readonly boardPresidentsService: BoardPresidentsService,
+  ) {}
 
   @Roles(UserRole.ADMIN)
   @Post()
@@ -30,7 +42,10 @@ export class BoardPresidentsController {
 
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBoardPresidentDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateBoardPresidentDto,
+  ) {
     return this.boardPresidentsService.update(id, dto);
   }
 

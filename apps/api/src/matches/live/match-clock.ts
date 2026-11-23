@@ -8,20 +8,28 @@ interface ClockFields {
 interface WithEvents {
   homeTeamId: number | null;
   awayTeamId: number | null;
-  events?: { type: MatchEventType; teamId: number | null; deletedAt: Date | null }[];
+  events?: {
+    type: MatchEventType;
+    teamId: number | null;
+    deletedAt: Date | null;
+  }[];
 }
 
 // O cronômetro é salvo como "tempo acumulado + instante em que voltou a rodar";
 // assim ele continua correto mesmo se a página do mesário for recarregada.
 export function elapsedSeconds(match: ClockFields, now = new Date()) {
   if (!match.clockRunningSince) return match.stopwatchSeconds;
-  const running = Math.floor((now.getTime() - match.clockRunningSince.getTime()) / 1000);
+  const running = Math.floor(
+    (now.getTime() - match.clockRunningSince.getTime()) / 1000,
+  );
   return match.stopwatchSeconds + Math.max(running, 0);
 }
 
 // Sets vencidos são derivados dos eventos SET_PARTIAL (modalidades SETS_PARTIALS)
 export function setsWon(match: WithEvents) {
-  const sets = (match.events ?? []).filter((e) => e.type === MatchEventType.SET_PARTIAL && !e.deletedAt);
+  const sets = (match.events ?? []).filter(
+    (e) => e.type === MatchEventType.SET_PARTIAL && !e.deletedAt,
+  );
   return {
     home: sets.filter((e) => e.teamId === match.homeTeamId).length,
     away: sets.filter((e) => e.teamId === match.awayTeamId).length,

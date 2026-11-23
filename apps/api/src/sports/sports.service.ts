@@ -17,7 +17,7 @@ export class SportsService {
         type: createSportDto.type,
         iconUrl: createSportDto.iconUrl,
         shortDesc: createSportDto.shortDesc,
-        deletedAt: null, 
+        deletedAt: null,
       },
       create: createSportDto,
     });

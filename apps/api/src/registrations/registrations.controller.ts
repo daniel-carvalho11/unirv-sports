@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Patch, Body, Param, ParseIntPipe, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  ParseIntPipe,
+  Request,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { RegistrationsService } from './registrations.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
@@ -25,7 +34,9 @@ export class RegistrationsController {
   @Roles(UserRole.REPRESENTATIVE)
   @Get('pending')
   async getPending(@Request() req) {
-    return this.registrationsService.findPendingByAthletics(req.user.athleticsId);
+    return this.registrationsService.findPendingByAthletics(
+      req.user.athleticsId,
+    );
   }
 
   @Roles(UserRole.REPRESENTATIVE)
@@ -41,6 +52,10 @@ export class RegistrationsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRegistrationStatusDto,
   ) {
-    return this.registrationsService.updateStatus(id, req.user.athleticsId, dto);
+    return this.registrationsService.updateStatus(
+      id,
+      req.user.athleticsId,
+      dto,
+    );
   }
 }

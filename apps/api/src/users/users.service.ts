@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,16 +36,22 @@ export class UsersService {
 
     // Segunda barreira além do DTO: o cadastro público nunca cria perfis com poder de aprovação ou de mesa
     if (!(PUBLIC_SIGNUP_ROLES as readonly UserRole[]).includes(userData.role)) {
-      throw new ForbiddenException('Este perfil não pode ser criado pelo cadastro público.');
+      throw new ForbiddenException(
+        'Este perfil não pode ser criado pelo cadastro público.',
+      );
     }
 
     const needsAthletics = userData.role === UserRole.ATHLETE;
     if (needsAthletics && !athleticsId) {
-      throw new BadRequestException('Atletas precisam selecionar uma atlética.');
+      throw new BadRequestException(
+        'Atletas precisam selecionar uma atlética.',
+      );
     }
 
     if (needsAthletics) {
-      const athletics = await this.prisma.athletics.findFirst({ where: { id: athleticsId, deletedAt: null } });
+      const athletics = await this.prisma.athletics.findFirst({
+        where: { id: athleticsId, deletedAt: null },
+      });
       if (!athletics) {
         throw new BadRequestException('Atlética não encontrada.');
       }
@@ -50,7 +62,9 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Este e-mail já está cadastrado na plataforma.');
+      throw new ConflictException(
+        'Este e-mail já está cadastrado na plataforma.',
+      );
     }
 
     const passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
@@ -68,8 +82,13 @@ export class UsersService {
       });
     } catch (error) {
       // Dois cadastros simultâneos com o mesmo e-mail passam pela checagem acima; o índice único barra o segundo
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Este e-mail já está cadastrado na plataforma.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Este e-mail já está cadastrado na plataforma.',
+        );
       }
       throw error;
     }

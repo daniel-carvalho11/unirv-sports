@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -30,7 +38,10 @@ export class SystemSettingsController {
 
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSystemSettingDto: UpdateSystemSettingDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateSystemSettingDto: UpdateSystemSettingDto,
+  ) {
     return this.systemSettingsService.update(+id, updateSystemSettingDto);
   }
 
