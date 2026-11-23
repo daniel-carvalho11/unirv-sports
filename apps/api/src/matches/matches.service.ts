@@ -9,7 +9,15 @@ export class MatchesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createMatchDto: CreateMatchDto) {
-    const { scheduledAt, tournamentSportId, homeTeamId, awayTeamId, winnerTeamId, tableOfficialId, ...data } = createMatchDto;
+    const {
+      scheduledAt,
+      tournamentSportId,
+      homeTeamId,
+      awayTeamId,
+      winnerTeamId,
+      tableOfficialId,
+      ...data
+    } = createMatchDto;
 
     return this.prisma.match.create({
       data: {
@@ -19,7 +27,9 @@ export class MatchesService {
         ...(homeTeamId && { homeTeam: { connect: { id: homeTeamId } } }),
         ...(awayTeamId && { awayTeam: { connect: { id: awayTeamId } } }),
         ...(winnerTeamId && { winnerTeam: { connect: { id: winnerTeamId } } }),
-        ...(tableOfficialId && { tableOfficial: { connect: { id: tableOfficialId } } }),
+        ...(tableOfficialId && {
+          tableOfficial: { connect: { id: tableOfficialId } },
+        }),
       },
       include: {
         tournamentSport: {
@@ -86,18 +96,30 @@ export class MatchesService {
 
   async update(id: number, updateMatchDto: UpdateMatchDto) {
     await this.findOne(id);
-    const { scheduledAt, tournamentSportId, homeTeamId, awayTeamId, winnerTeamId, tableOfficialId, ...data } = updateMatchDto;
+    const {
+      scheduledAt,
+      tournamentSportId,
+      homeTeamId,
+      awayTeamId,
+      winnerTeamId,
+      tableOfficialId,
+      ...data
+    } = updateMatchDto;
 
     return this.prisma.match.update({
       where: { id },
       data: {
         ...data,
         ...(scheduledAt && { scheduledAt: new Date(scheduledAt) }),
-        ...(tournamentSportId && { tournamentSport: { connect: { id: tournamentSportId } } }),
+        ...(tournamentSportId && {
+          tournamentSport: { connect: { id: tournamentSportId } },
+        }),
         ...(homeTeamId && { homeTeam: { connect: { id: homeTeamId } } }),
         ...(awayTeamId && { awayTeam: { connect: { id: awayTeamId } } }),
         ...(winnerTeamId && { winnerTeam: { connect: { id: winnerTeamId } } }),
-        ...(tableOfficialId && { tableOfficial: { connect: { id: tableOfficialId } } }),
+        ...(tableOfficialId && {
+          tableOfficial: { connect: { id: tableOfficialId } },
+        }),
       },
       include: {
         homeTeam: { include: { athletics: true } },

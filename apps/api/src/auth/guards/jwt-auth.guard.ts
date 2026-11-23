@@ -1,4 +1,8 @@
-import { Injectable, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -22,7 +26,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     // Com o login bloqueado nenhuma rota autenticada responde, mesmo que alguém tenha um token antigo
     if (!isLoginEnabled()) {
-      throw new ForbiddenException('Plataforma em pré-lançamento: área logada indisponível.');
+      throw new ForbiddenException(
+        'Plataforma em pré-lançamento: área logada indisponível.',
+      );
     }
 
     return super.canActivate(context);

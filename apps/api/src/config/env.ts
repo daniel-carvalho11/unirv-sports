@@ -25,10 +25,14 @@ export function isLoginEnabled(): boolean {
 
 // Origens do front autorizadas no CORS, separadas por vírgula (ex.: https://unirv-sports.onrender.com)
 export function corsOrigins(): string[] | true {
-  const origins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()).filter(Boolean);
+  const origins = process.env.CORS_ORIGIN?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   if (origins?.length) return origins;
   if (isProduction()) {
-    throw new Error('CORS_ORIGIN é obrigatório em produção (URL do front-end).');
+    throw new Error(
+      'CORS_ORIGIN é obrigatório em produção (URL do front-end).',
+    );
   }
   return true; // dev: qualquer origem
 }

@@ -7,7 +7,11 @@ export type MatchSide = (typeof MATCH_SIDES)[number];
 export const CLOCK_ACTIONS = ['START', 'PAUSE', 'FINISH'] as const;
 export type ClockAction = (typeof CLOCK_ACTIONS)[number];
 
-export const LIVE_EVENT_TYPES = [MatchEventType.FOUL, MatchEventType.YELLOW_CARD, MatchEventType.RED_CARD] as const;
+export const LIVE_EVENT_TYPES = [
+  MatchEventType.FOUL,
+  MatchEventType.YELLOW_CARD,
+  MatchEventType.RED_CARD,
+] as const;
 
 export class MatchClockDto {
   @IsIn(CLOCK_ACTIONS)

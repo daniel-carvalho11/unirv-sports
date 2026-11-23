@@ -1,4 +1,10 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { Prisma } from '@prisma/client';
 
 export class CreateAthleticDto implements Prisma.AthleticsCreateInput {

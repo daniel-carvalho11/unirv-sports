@@ -8,7 +8,14 @@ export class OlympicRankingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async upsert(dto: CreateOlympicRankingDto) {
-    const { tournamentId, athleticsId, totalPoints = 0, goldCount = 0, silverCount = 0, bronzeCount = 0 } = dto;
+    const {
+      tournamentId,
+      athleticsId,
+      totalPoints = 0,
+      goldCount = 0,
+      silverCount = 0,
+      bronzeCount = 0,
+    } = dto;
 
     return this.prisma.olympicRanking.upsert({
       where: {
@@ -59,7 +66,9 @@ export class OlympicRankingService {
     });
 
     if (!ranking) {
-      throw new NotFoundException(`Registro de ranking com ID ${id} não encontrado.`);
+      throw new NotFoundException(
+        `Registro de ranking com ID ${id} não encontrado.`,
+      );
     }
 
     return ranking;

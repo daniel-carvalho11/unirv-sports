@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { SportsService } from './sports.service';
 import { CreateSportDto } from './dto/create-sport.dto';
@@ -32,8 +41,8 @@ export class SportsController {
   @Roles(UserRole.ADMIN)
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) id: number, 
-    @Body() updateSportDto: UpdateSportDto
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateSportDto: UpdateSportDto,
   ) {
     return this.sportsService.update(id, updateSportDto);
   }

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -8,7 +18,9 @@ import { UpdateTrophyConquestDto } from './dto/update-trophy-conquest.dto';
 
 @Controller('trophy-conquests')
 export class TrophyConquestsController {
-  constructor(private readonly trophyConquestsService: TrophyConquestsService) {}
+  constructor(
+    private readonly trophyConquestsService: TrophyConquestsService,
+  ) {}
 
   @Roles(UserRole.ADMIN)
   @Post()
@@ -30,7 +42,10 @@ export class TrophyConquestsController {
 
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTrophyConquestDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTrophyConquestDto,
+  ) {
     return this.trophyConquestsService.update(id, dto);
   }
 

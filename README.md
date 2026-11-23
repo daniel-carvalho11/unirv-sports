@@ -1,6 +1,31 @@
-# 🏆 UniRV Sports — Platform API
+# 🏆 UniRV Sports
 
-API REST desenvolvida em NestJS para gerenciamento de campeonatos, atléticas, modalidades esportivas e engajamento acadêmico da UniRV.
+Plataforma web para gerenciamento e acompanhamento dos jogos universitários da UniRV (Universidade de Rio Verde): atléticas, modalidades, inscrição de atletas, partidas com placar ao vivo e ranking olímpico.
+
+O repositório é um monorepo com dois apps dentro de `apps/`:
+
+- **`apps/api`**: API REST em NestJS + Prisma (MySQL)
+- **`apps/web`**: front-end em Next.js
+
+---
+
+## 👥 Integrantes
+
+- Daniel Carvalho
+- Henrique Rondon
+- João Victor Vieira
+- Felipe Lopes
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+| Camada | Tecnologias |
+|---|---|
+| **Back-end** | Node.js, NestJS 11, TypeScript, Prisma ORM 6, MySQL 8, JWT (Passport), bcrypt, class-validator, @nestjs/throttler (rate limit), Server-Sent Events (placar ao vivo) |
+| **Front-end** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
+| **Testes e qualidade** | Jest, ESLint, Prettier |
+| **Infra** | Render (deploy), concurrently (API + Web em um terminal), Git/GitHub |
 
 ---
 
@@ -19,7 +44,7 @@ As **Migrations** são versionadores da estrutura do seu banco de dados. Cada al
 
 Antes de iniciar, certifique-se de ter instalado em sua máquina:
 
-* [Node.js](https://nodejs.org/) (v18 ou superior)
+* [Node.js](https://nodejs.org/) (v20.9 ou superior, exigido pelo Next.js 16)
 * [MySQL](https://www.mysql.com/) 8 (ou MariaDB) rodando localmente
 * [Git](https://git-scm.com/)
 
@@ -30,7 +55,7 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
 ### 1. Clonar o Repositório
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone https://github.com/daniel-carvalho11/unirv-sports.git
 cd unirv-sports
 ```
 
@@ -86,7 +111,7 @@ Senha de todos: `Unirv@2026`
 | TABLE_OFFICIAL | mesario@unirvsports.dev | — |
 | VISITOR (torcedor) | torcedor@unirvsports.dev | — |
 
-**Mesa de controle (Oficial de Mesa):** entre como `mesario` → *Minhas Partidas* → *Abrir Mesa*. Inicie a partida, lance pontos, faltas e cartões e pause/retome o cronômetro. Com a home aberta em outra aba, o *Feed ao Vivo* atualiza na hora. Em vôlei e beach tennis, use *Fechar Set* ao fim de cada set. O seed já deixa CERBERUS x KROMUS em andamento, e rodar `npm run seed` de novo zera placares, lances e cronômetros.
+**Mesa de controle (Oficial de Mesa):** entre como `mesario` → *Minhas Partidas* → *Abrir Mesa*. Inicie a partida, lance pontos, faltas e cartões e pause/retome o cronômetro. Com a home aberta em outra aba, o *Feed ao Vivo* atualiza na hora. Em vôlei e beach tennis, use *Fechar Set* ao fim de cada set. O seed já deixa CERBERUS x KROMUS em andamento, e rodar `npm run db:seed` de novo zera placares, lances e cronômetros.
 
 **Fluxo de inscrição:** entre como `atleta2.famerv` → aba *Modalidades* → solicite inscrição (ou reenvie a recusada). Depois entre como `diretor.famerv` → *Aprovações Pendentes* → aprove. O `diretor.grifo` não enxerga nem consegue aprovar pedidos da FAMERV.
 
